@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "fetch-retry": "^5.0.1",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.6",
     "sha1": "^1.1.1"
   }
 }
