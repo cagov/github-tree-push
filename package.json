@@ -1,0 +1,32 @@
+{
+  "name": "cagov-slack-connector-development",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cagov/slack-connector.git"
+  },
+  "bugs": "https://github.com/cagov/slack-connector/issues",
+  "description": "Development project for slack-connector",
+  "type": "commonjs",
+  "scripts": {
+    "install_normal": "npm install file:slack-connector-module",
+    "install_without_symlinks": "npm install $(npm pack file:slack-connector-module | tail -1)"
+  },
+  "keywords": [
+    "Slack"
+  ],
+  "author": {
+    "name": "Carter Medlin",
+    "email": "carter@digital.ca.gov",
+    "url": "https://github.com/carterm"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-plugin-jsdoc": "^36.1.0",
+    "prettier": "^2.4.1"
+  },
+  "dependencies": {
+    "@cagov/slack-connector": "file:slack-connector-module"
+  }
+}
