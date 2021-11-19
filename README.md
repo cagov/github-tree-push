@@ -1,3 +1,3 @@
-# Slack Connector
+# github-tree-push Development Project
 
-Development project for [@cagov/slack-connector](https://www.npmjs.com/package/@cagov/slack-connector)
+Development project for [@cagov/github-tree-push](https://www.npmjs.com/package/@cagov/github-tree-push)
