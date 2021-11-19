@@ -230,3 +230,5 @@ Here is a simple tree update that associates already uploaded blobs with files i
 ```
 
 Since the heavy file work, transferring the binary files in separate threads, was done before the tree was submitted, the actual tree is very small to transmit.
+
+Project on NPM [@cagov/github-tree-push](https://www.npmjs.com/package/@cagov/github-tree-push)
