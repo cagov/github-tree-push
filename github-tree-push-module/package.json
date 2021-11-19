@@ -31,7 +31,7 @@
     "url": "https://github.com/carterm"
   },
   "dependencies": {
-    "fetch-retry": "^4.1.1",
+    "fetch-retry": "^5.0.1",
     "node-fetch": "^2.6.1",
     "sha1": "^1.1.1"
   }
