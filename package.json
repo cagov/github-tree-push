@@ -1,20 +1,17 @@
 {
-  "name": "cagov-slack-connector-development",
+  "name": "cagov-github-tree-push-development",
   "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cagov/slack-connector.git"
+    "url": "https://github.com/cagov/github-tree-push.git"
   },
-  "bugs": "https://github.com/cagov/slack-connector/issues",
-  "description": "Development project for slack-connector",
+  "bugs": "https://github.com/cagov/github-tree-push/issues",
+  "description": "Development project for github-tree-push",
   "type": "commonjs",
   "scripts": {
-    "install_normal": "npm install file:slack-connector-module",
-    "install_without_symlinks": "npm install $(npm pack file:slack-connector-module | tail -1)"
+    "install_normal": "npm install file:github-tree-push-module",
+    "install_without_symlinks": "npm install $(npm pack file:github-tree-push-module | tail -1)"
   },
-  "keywords": [
-    "Slack"
-  ],
   "author": {
     "name": "Carter Medlin",
     "email": "carter@digital.ca.gov",
@@ -27,6 +24,6 @@
     "prettier": "^2.4.1"
   },
   "dependencies": {
-    "@cagov/slack-connector": "file:slack-connector-module"
+    "@cagov/github-tree-push": "file:github-tree-push-module"
   }
 }
