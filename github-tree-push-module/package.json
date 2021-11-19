@@ -16,6 +16,7 @@
   "bugs": "https://github.com/cagov/github-tree-push/issues",
   "description": "A module for pushing content to GitHub, be it complicated folder structure updates, or just a single file.",
   "scripts": {
+    "beta to NPM": "npm publish --tag beta",
     "publish to NPM": "npm publish"
   },
   "keywords": [
