@@ -10,15 +10,18 @@ const fetch = require("fetch-retry")(require("node-fetch/lib"), {
 const defaultPullRequestTitle = "Tree Push Pull Request";
 
 const sha1 = require("sha1");
-/**
- * Returns a Github equivalent sha hash for any given content
+/*
  * see https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
  *
  * Git generates the SHA by concatenating a header in the form of blob {content.length} {null byte} and the contents of your file
  *
+ */
+/**
+ * Returns a Github equivalent sha hash for any given content
  * @param {string | Buffer} content string or Buffer content to hash
  * @returns SHA Hash that would be used on Github for the given content
  */
+
 const gitHubBlobPredictSha = content =>
   sha1(
     Buffer.concat([
