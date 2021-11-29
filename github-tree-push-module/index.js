@@ -18,7 +18,7 @@ const sha1 = require("sha1");
  */
 /**
  * Returns a Github equivalent sha hash for any given content
- * @param {string | Buffer} content string or Buffer content to hash
+ * @param {String | Buffer} content string or Buffer content to hash
  * @returns SHA Hash that would be used on Github for the given content
  */
 
@@ -43,7 +43,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @property {string} repo **Required.** GitHub _repo_ path.
  * @property {string} base **Required.** The name of the base branch that the head will be merged into (main/etc).
  * @property {string} [path] Starting path in the repo for changes to start from. Defaults to root.
- * @property {boolean} [deleteOtherFiles] `true` to delete other files in the path when pushing.
+ * @property {boolean} [removeOtherFiles] `true` to remove other files in the path when pushing.
  * @property {boolean} [recursive] `true` to compare sub-folders too.
  * @property {number} [contentToBlobBytes] Content bytes allowed in content tree before turning it into a separate blob upload. Default 1000.
  * @property {string} [commit_message] Name to identify the Commit.
@@ -53,11 +53,11 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * @typedef {object} GithubTreeRow
- * @property {string} path
- * @property {string} mode usually '100644'
- * @property {string} type usually 'blob'
- * @property {string} [sha]
- * @property {string} [content]
+ * @property {String} path
+ * @property {String} mode usually '100644'
+ * @property {String} type usually 'blob'
+ * @property {String | null} [sha]
+ * @property {String} [content]
  */
 
 /**
@@ -148,14 +148,14 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 class GitHubTreePush {
   options;
 
-  /** @type {Map<string,TreeFileObject>} */
+  /** @type {Map<string,TreeFileObject | null>} */
   #fileMap = new Map();
 
   /**
    * Stats from the last operation
    * @type {TreeFileRunStats}
    */
-  lastRunStats;
+  lastRunStats = { Name: "Not Run" };
 
   /**
    * A list of all the shas we know exist in GitHub
@@ -262,7 +262,7 @@ class GitHubTreePush {
     const apiURL = `https://api.github.com/repos/${this.options.owner}/${this.options.repo}${path}`;
 
     //All these request have required auth
-    if (!options.headers?.Authorization) {
+    if (!options?.headers?.Authorization) {
       throw new Error("Authorization Header Required");
     }
     return fetch(apiURL, options).then(async response => {
@@ -334,7 +334,7 @@ class GitHubTreePush {
 
       const referenceTreeRow = rootTree.find(f => f.path === outputPath);
 
-      if (referenceTreeRow) {
+      if (referenceTreeRow?.sha) {
         treeUrl = referenceTreeRow.sha;
       }
     } else {
@@ -361,9 +361,10 @@ class GitHubTreePush {
     //Add all the known shas to a list
     referenceTree
       .map(x => x.sha)
-      .filter(x => x)
       .forEach(x => {
-        this.#knownBlobShas.add(x);
+        if (x) {
+          this.#knownBlobShas.add(x);
+        }
       });
 
     return referenceTree;
@@ -392,6 +393,7 @@ class GitHubTreePush {
         if (!existingFile || existingFile.sha !== value.sha) {
           let path = outputPath ? `${outputPath}/${key}` : key;
 
+          /** @type {GithubTreeRow} */
           const treeRow = {
             path,
             mode,
@@ -409,7 +411,7 @@ class GitHubTreePush {
       }
     }
 
-    if (this.options.deleteOtherFiles) {
+    if (this.options.removeOtherFiles) {
       //process deletes
       for (const delme of referenceTree.filter(
         x => !this.#fileMap.has(x.path)
@@ -493,11 +495,12 @@ class GitHubTreePush {
     //Add all the new content shas to the list
     tree
       .map(x => x.content)
-      .filter(x => x)
       .forEach(x => {
-        this.lastRunStats.Text_Content_Uploaded =
-          (this.lastRunStats.Text_Content_Uploaded || 0) + 1;
-        this.#knownBlobShas.add(gitHubBlobPredictSha(x));
+        if (x) {
+          this.lastRunStats.Text_Content_Uploaded =
+            (this.lastRunStats.Text_Content_Uploaded || 0) + 1;
+          this.#knownBlobShas.add(gitHubBlobPredictSha(x));
+        }
       });
 
     tree
@@ -526,7 +529,7 @@ class GitHubTreePush {
    * @param {GithubCommit} commit
    */
   async _compareCommit(commit) {
-    if (!commit) {
+    if (!commit?.parents) {
       return null;
     }
     const baseSha = commit.parents[0].sha;
@@ -543,44 +546,30 @@ class GitHubTreePush {
   }
 
   /**
-   * Add a single file to the tree
-   * @param {string} path path to use for publishing file
-   * @param {string | Buffer} value content to use
+   * Sets a single file to the tree to be syncronized - (updated or added)
+   * @param {String} path path to use for publishing file
+   * @param {String | Buffer} value content to use
    */
-  addFile(path, value) {
-    const content =
-      typeof value === "string"
-        ? value
-        : Buffer.isBuffer(value)
-        ? null
-        : JSON.stringify(value, null, 2);
-
-    const buffer = Buffer.isBuffer(value) ? value : null;
-
-    const sha = gitHubBlobPredictSha(content || buffer);
-
+  syncFile(path, value) {
     /** @type {TreeFileObject} */
-    const newFile = { sha, content, buffer };
+    let newFile = { sha: gitHubBlobPredictSha(value) };
+
+    if (Buffer.isBuffer(value)) {
+      newFile.buffer = value;
+    } else {
+      newFile.content =
+        typeof value === "string" ? value : JSON.stringify(value, null, 2);
+    }
 
     this.#fileMap.set(path, newFile);
   }
 
   /**
-   * Sets a file to be ignored
+   * Sets a file to not be removed when `removeOtherFiles:true`.
    * @param {string} path path to use for ignored file
    */
-  ignoreFile(path) {
+  doNotRemoveFile(path) {
     this.#fileMap.set(path, null);
-  }
-
-  /**
-   * Adds a list of files to the tree
-   * @param {Map<string,string | Buffer>} newFileMap
-   */
-  addFileMap(newFileMap) {
-    for (const [path, value] of newFileMap) {
-      this.addFile(path, value);
-    }
   }
 
   /**
@@ -594,26 +583,28 @@ class GitHubTreePush {
 
     //Push Buffers
     for (const value of fileMapValues) {
-      if (!this.#knownBlobShas.has(value.sha)) {
-        if (value.content) {
-          //If the content is duplicate, or too large, use a buffer
-          if (
-            Buffer.byteLength(value.content, "utf8") >
-              this.options.contentToBlobBytes ||
-            fileMapValues.filter(x => x.sha === value.sha).length > 1 //2 or more found
-          ) {
-            //content converted to blobs
-            this.lastRunStats.Content_Converted_To_Blobs =
-              (this.lastRunStats.Content_Converted_To_Blobs || 0) + 1;
-            value.buffer = Buffer.from(value.content);
-            value.content = null;
+      if (value) {
+        if (!this.#knownBlobShas.has(value.sha)) {
+          if (value.content) {
+            //If the content is duplicate, or too large, use a buffer
+            if (
+              Buffer.byteLength(value.content, "utf8") >
+              (this.options?.contentToBlobBytes ??
+                fileMapValues.filter(x => x?.sha === value.sha).length > 1) //2 or more found
+            ) {
+              //content converted to blobs
+              this.lastRunStats.Content_Converted_To_Blobs =
+                (this.lastRunStats.Content_Converted_To_Blobs || 0) + 1;
+              value.buffer = Buffer.from(value.content);
+              delete value.content;
+            }
           }
-        }
 
-        //If buffer and the sha is not already confirmed uploaded, check it and upload.
-        if (value.buffer) {
-          blobPromises.push(this._putBlobInRepo(value.sha, value.buffer));
-          this.#knownBlobShas.add(value.sha);
+          //If buffer and the sha is not already confirmed uploaded, check it and upload.
+          if (value.buffer) {
+            blobPromises.push(this._putBlobInRepo(value.sha, value.buffer));
+            this.#knownBlobShas.add(value.sha);
+          }
         }
       }
     }
@@ -652,7 +643,7 @@ class GitHubTreePush {
 
       //List all the files being uploaded/matched
       [...this.#fileMap]
-        .filter(([, value]) => value.sha === sha)
+        .filter(([, value]) => value?.sha === sha)
         .forEach(([key]) => console.log(logNote + key));
     });
   }
@@ -678,7 +669,7 @@ class GitHubTreePush {
       ? {
           headers: { "If-None-Match": originalData.etag }
         }
-      : null;
+      : undefined;
 
     //https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
     /** @type {PrStatus} */
@@ -686,8 +677,8 @@ class GitHubTreePush {
       304
     ]);
 
-    const status = this.lastFetchResponse.status;
-    const etag = this.lastFetchResponse.headers.get("etag");
+    const status = this.lastFetchResponse?.status;
+    const etag = this.lastFetchResponse?.headers.get("etag");
 
     //https://docs.github.com/en/rest/overview/resources-in-the-rest-api#conditional-requests
     return /** @type {PrStatus} */ (
@@ -718,7 +709,7 @@ class GitHubTreePush {
       ? {
           headers: { "If-None-Match": originalData.etag }
         }
-      : null;
+      : undefined;
 
     //https://docs.github.com/en/rest/reference/checks#list-check-runs-for-a-git-reference
     /** @type {PrCheckStatus} */
@@ -728,8 +719,8 @@ class GitHubTreePush {
       [304]
     );
 
-    const status = this.lastFetchResponse.status;
-    const etag = this.lastFetchResponse.headers.get("etag");
+    const status = this.lastFetchResponse?.status;
+    const etag = this.lastFetchResponse?.headers.get("etag");
 
     //https://docs.github.com/en/rest/overview/resources-in-the-rest-api#conditional-requests
 
@@ -763,158 +754,164 @@ class GitHubTreePush {
       this.options.commit_message
     );
 
-    const compare = await this._compareCommit(commit);
+    if (!commit) {
+      console.log("Nothing to commit.");
+    } else {
+      const compare = await this._compareCommit(commit);
 
-    if (compare?.files.length) {
-      //Changes to apply
+      if (compare?.files.length) {
+        //Changes to apply
 
-      if (this.options.pull_request) {
-        //Pull Request Mode
-        const newBranchName = `${this.options.base}-${commit.sha}`;
+        if (this.options.pull_request) {
+          //Pull Request Mode
+          const newBranchName = `${this.options.base}-${commit.sha}`;
 
-        const pull_request_options = { ...this.options.pull_request_options };
+          const pull_request_options = { ...this.options.pull_request_options };
 
-        //https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request
-        const review_options = pull_request_options.review_options;
-        delete pull_request_options.review_options;
-
-        //https://docs.github.com/en/rest/reference/issues#update-an-issue
-        const issue_options = pull_request_options.issue_options;
-        delete pull_request_options.issue_options;
-
-        const auto_merge = pull_request_options.automatic_merge;
-        delete pull_request_options.automatic_merge;
-        const auto_merge_delay = pull_request_options.automatic_merge_delay;
-        delete pull_request_options.automatic_merge_delay;
-
-        //https://docs.github.com/en/rest/reference/git#create-a-reference
-        await this._postSomeJson("/git/refs", {
-          sha: commit.sha,
-          ref: `refs/heads/${newBranchName}`
-        });
-
-        const prOptions = {
-          head: newBranchName,
-          base: this.options.base,
-          ...pull_request_options
-        };
-
-        if (!prOptions.title && !prOptions.issue) {
-          prOptions.title = defaultPullRequestTitle;
-        }
-
-        //https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
-        /** @type {{number:number,head:{ref:string},html_url:string}} */
-        const prResult = await this._postSomeJson("/pulls", prOptions);
-
-        if (issue_options) {
-          //https://docs.github.com/en/rest/reference/issues#update-an-issue
-          await this._postSomeJson(
-            `/issues/${prResult.number}`,
-            issue_options,
-            {
-              method: "PATCH"
-            }
-          );
-        }
-
-        if (review_options) {
           //https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request
-          await this._postSomeJson(
-            `/pulls/${prResult.number}/requested_reviewers`,
-            review_options
-          );
-        }
+          const review_options = pull_request_options.review_options;
+          delete pull_request_options.review_options;
 
-        if (auto_merge) {
-          if (auto_merge_delay) {
-            console.log(`Waiting ${auto_merge_delay}ms before merging PR...`);
-            await sleep(auto_merge_delay);
+          //https://docs.github.com/en/rest/reference/issues#update-an-issue
+          const issue_options = pull_request_options.issue_options;
+          delete pull_request_options.issue_options;
+
+          const auto_merge = pull_request_options.automatic_merge;
+          delete pull_request_options.automatic_merge;
+          const auto_merge_delay = pull_request_options.automatic_merge_delay;
+          delete pull_request_options.automatic_merge_delay;
+
+          //https://docs.github.com/en/rest/reference/git#create-a-reference
+          await this._postSomeJson("/git/refs", {
+            sha: commit.sha,
+            ref: `refs/heads/${newBranchName}`
+          });
+
+          const prOptions = {
+            head: newBranchName,
+            base: this.options.base,
+            ...pull_request_options
+          };
+
+          if (!prOptions.title && !prOptions.issue) {
+            prOptions.title = defaultPullRequestTitle;
           }
-          let checkStatus = await this._getPrCheckStatus(commit.sha);
-          let prStatus = await this._getPrStatus(prResult.number);
 
-          let waitAttemps = 0;
+          //https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
+          /** @type {{number:number,head:{ref:string},html_url:string}} */
+          const prResult = await this._postSomeJson("/pulls", prOptions);
 
-          while (
-            prStatus.mergeable_state === "unknown" ||
-            (["blocked", "unstable"].includes(prStatus.mergeable_state) &&
-              checkStatus.check_runs.some(x => x.status !== "completed"))
-          ) {
-            // If the mergable state is unknown, or it is blocked with incomplete checks
-            // Unknown mergable state happens for a few seconds after the PR is created
-            // "unstable" is when there are no blocking checks, but checks are running.  "blocked" is when blocking checks are running.
+          if (issue_options) {
+            //https://docs.github.com/en/rest/reference/issues#update-an-issue
+            await this._postSomeJson(
+              `/issues/${prResult.number}`,
+              issue_options,
+              {
+                method: "PATCH"
+              }
+            );
+          }
+
+          if (review_options) {
+            //https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request
+            await this._postSomeJson(
+              `/pulls/${prResult.number}/requested_reviewers`,
+              review_options
+            );
+          }
+
+          if (auto_merge) {
+            if (auto_merge_delay) {
+              console.log(`Waiting ${auto_merge_delay}ms before merging PR...`);
+              await sleep(auto_merge_delay);
+            }
+            let checkStatus = await this._getPrCheckStatus(commit.sha);
+            let prStatus = await this._getPrStatus(prResult.number);
+
+            let waitAttemps = 0;
+
+            while (
+              prStatus.mergeable_state === "unknown" ||
+              (["blocked", "unstable"].includes(prStatus.mergeable_state) &&
+                checkStatus.check_runs.some(x => x.status !== "completed"))
+            ) {
+              // If the mergable state is unknown, or it is blocked with incomplete checks
+              // Unknown mergable state happens for a few seconds after the PR is created
+              // "unstable" is when there are no blocking checks, but checks are running.  "blocked" is when blocking checks are running.
+
+              console.log(
+                `Waiting for merge, checks = ${checkStatus.check_runs.length}. mergable = ${prStatus.mergeable}, prstatus = ${prStatus.status}, checkstatus = ${checkStatus.status}, mergeable_state = ${prStatus.mergeable_state}`
+              );
+
+              await sleep(1000);
+
+              prStatus = await this._getPrStatus(prResult.number, prStatus);
+
+              checkStatus = await this._getPrCheckStatus(
+                commit.sha,
+                checkStatus
+              );
+
+              const failedCheck = checkStatus.check_runs.find(
+                x => x.conclusion === "failure"
+              );
+
+              if (failedCheck) {
+                throw new Error(
+                  `Auto Merge Check run failed - ${failedCheck.html_url}`
+                );
+              }
+
+              waitAttemps++;
+              if (waitAttemps > 100) {
+                throw new Error(
+                  `Auto Merge waited too long - ${prResult.html_url}`
+                );
+              }
+            }
 
             console.log(
-              `Waiting for merge, checks = ${checkStatus.check_runs.length}. mergable = ${prStatus.mergeable}, prstatus = ${prStatus.status}, checkstatus = ${checkStatus.status}, mergeable_state = ${prStatus.mergeable_state}`
+              `Done Waiting, checks = ${checkStatus.check_runs.length}. mergable = ${prStatus.mergeable}, prstatus = ${prStatus.status}, checkstatus = ${checkStatus.status}, mergeable_state = ${prStatus.mergeable_state}`
             );
 
-            await sleep(1000);
-
-            prStatus = await this._getPrStatus(prResult.number, prStatus);
-
-            checkStatus = await this._getPrCheckStatus(commit.sha, checkStatus);
-
-            const failedCheck = checkStatus.check_runs.find(
-              x => x.conclusion === "failure"
+            //https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request
+            await this._postSomeJson(
+              `/pulls/${prResult.number}/merge`,
+              { merge_method: "squash" },
+              {
+                method: "PUT"
+              }
             );
 
-            if (failedCheck) {
-              throw new Error(
-                `Auto Merge Check run failed - ${failedCheck.html_url}`
-              );
-            }
-
-            waitAttemps++;
-            if (waitAttemps > 100) {
-              throw new Error(
-                `Auto Merge waited too long - ${prResult.html_url}`
-              );
-            }
-          }
-
-          console.log(
-            `Done Waiting, checks = ${checkStatus.check_runs.length}. mergable = ${prStatus.mergeable}, prstatus = ${prStatus.status}, checkstatus = ${checkStatus.status}, mergeable_state = ${prStatus.mergeable_state}`
-          );
-
-          //https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request
-          await this._postSomeJson(
-            `/pulls/${prResult.number}/merge`,
-            { merge_method: "squash" },
-            {
-              method: "PUT"
-            }
-          );
-
-          //Check before deleting (In case of auto-delete)
-          const headResult = await this._fetchResponse(
-            `/git/refs/heads/${prResult.head.ref}`,
-            this._gitDefaultOptions({ method: "HEAD" }),
-            [404]
-          );
-
-          if (headResult.ok) {
-            //https://docs.github.com/en/rest/reference/git#delete-a-reference
-            await this._fetchResponse(
+            //Check before deleting (In case of auto-delete)
+            const headResult = await this._fetchResponse(
               `/git/refs/heads/${prResult.head.ref}`,
-              this._gitDefaultOptions({ method: "DELETE" })
+              this._gitDefaultOptions({ method: "HEAD" }),
+              [404]
             );
+
+            if (headResult.ok) {
+              //https://docs.github.com/en/rest/reference/git#delete-a-reference
+              await this._fetchResponse(
+                `/git/refs/heads/${prResult.head.ref}`,
+                this._gitDefaultOptions({ method: "DELETE" })
+              );
+            }
           }
+          this.lastRunStats.Pull_Request_URL = prResult.html_url;
+        } else {
+          //Just a simple commit on this branch
+          //https://docs.github.com/en/rest/reference/git#update-a-reference
+          await this._postSomeJson(
+            `/git/refs/heads/${this.options.base}`,
+            {
+              sha: commit.sha
+            },
+            { method: "PATCH" }
+          );
         }
-        this.lastRunStats.Pull_Request_URL = prResult.html_url;
-      } else {
-        //Just a simple commit on this branch
-        //https://docs.github.com/en/rest/reference/git#update-a-reference
-        await this._postSomeJson(
-          `/git/refs/heads/${this.options.base}`,
-          {
-            sha: commit.sha
-          },
-          { method: "PATCH" }
-        );
       }
     }
-
     return this.lastRunStats;
   }
 }
