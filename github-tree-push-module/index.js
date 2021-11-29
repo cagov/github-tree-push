@@ -919,4 +919,4 @@ class GitHubTreePush {
   }
 }
 
-module.exports = GitHubTreePush;
+module.exports = { GitHubTreePush };

@@ -6,14 +6,14 @@ Object.keys(Values).forEach(x => (process.env[x] = Values[x])); //Load local set
 // @ts-ignore
 process.env.debug = true; //set to false or remove to run like the real instance
 
-const treePush = require("@cagov/github-tree-push");
+const { GitHubTreePush } = require("@cagov/github-tree-push");
 
 (async () => {
   /** @type {Map<string,*>} */
   const fileMap = new Map();
 
   const token = process.env["GITHUB_TOKEN"];
-  const tree1 = new treePush(token, {
+  const tree1 = new GitHubTreePush(token, {
     owner: "cagov",
     repo: "automation-development-target",
     base: "github-tree-push-testing",
@@ -40,7 +40,7 @@ const treePush = require("@cagov/github-tree-push");
 
   console.log(JSON.stringify(tree1.lastRunStats, null, 2));
 
-  const rootTree = new treePush(token, {
+  const rootTree = new GitHubTreePush(token, {
     owner: "cagov",
     repo: "automation-development-target",
     base: "github-tree-push-testing",
