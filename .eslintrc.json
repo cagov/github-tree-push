@@ -1,5 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/eslintrc",
+  "parserOptions": {
+    "ecmaVersion": 12,
+    "sourceType": "script",
+    "ecmaFeatures": {
+      "jsx": true,
+      "modules": false,
+      "experimentalObjectRestSpread": true
+    }
+  },
   "env": {
     "browser": false,
     "commonjs": true,
@@ -12,10 +21,6 @@
     "plugin:prettier/recommended"
   ],
   "plugins": ["prettier", "jsdoc"],
-  "parserOptions": {
-    "ecmaVersion": 12,
-    "sourceType": "script"
-  },
   "rules": {
     "arrow-parens": ["warn", "as-needed"],
     "block-scoped-var": "warn",
