@@ -14,7 +14,7 @@
   "plugins": ["prettier", "jsdoc"],
   "parserOptions": {
     "ecmaVersion": 12,
-    "sourceType": "module"
+    "sourceType": "script"
   },
   "rules": {
     "arrow-parens": ["warn", "as-needed"],
