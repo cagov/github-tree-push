@@ -109,7 +109,13 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  */
 
 /**
- * @typedef {object} TreeFileObject
+ * @typedef {object} TreeFileOperation
+ * @property {TreeFileOperationSync} [sync]
+ * @property {boolean} [remove]
+ */
+
+/**
+ * @typedef {object} TreeFileOperationSync
  * @property {string} sha
  * @property {string} [content]
  * @property {Buffer} [buffer]
@@ -165,9 +171,9 @@ class GitHubTreePush {
     /**
      *  (private) All registered files for the tree operation
      *
-     * @type {Map<string,TreeFileObject | null>}
+     * @type {Map<string,TreeFileOperation>}
      */
-    this.__fileMap = new Map();
+    this.__treeOperations = new Map();
 
     /**
      * Stats from the last operation
@@ -392,9 +398,9 @@ class GitHubTreePush {
   /**
    * returns an update tree that for files in the fileMap that are changed from the referenceTree
    *
-   * @param {GithubTreeRow[]} referenceTree
+   * @param {GithubTreeRow[]} existingFilesTree
    */
-  __deltaTree(referenceTree) {
+  __deltaTree(existingFilesTree) {
     const outputPath = this.options.path;
 
     /** @type {GithubTreeRow[]} */
@@ -404,14 +410,16 @@ class GitHubTreePush {
     const mode = "100644"; //code for tree blob
     const type = "blob";
 
-    for (const [key, value] of this.__fileMap) {
-      let existingFile = referenceTree.find(x => x.path === key);
+    for (const [opPath, operation] of this.__treeOperations) {
+      let existingFile = existingFilesTree.find(x => x.path === opPath);
 
-      if (value) {
-        //ignoring files with null value
+      if (operation.remove !== undefined) {
+      } else if (operation.sync) {
+        //Add / Update
 
-        if (!existingFile || existingFile.sha !== value.sha) {
-          let path = outputPath ? `${outputPath}/${key}` : key;
+        if (existingFile?.sha !== operation.sync.sha) {
+          //Change detected
+          let path = outputPath ? `${outputPath}/${opPath}` : opPath;
 
           /** @type {GithubTreeRow} */
           const treeRow = {
@@ -420,22 +428,31 @@ class GitHubTreePush {
             type
           };
 
-          if (value.content && !this.__knownBlobShas.has(value.sha)) {
-            treeRow.content = value.content;
-          } else if (value.sha) {
-            treeRow.sha = value.sha;
+          if (
+            operation.sync.content &&
+            !this.__knownBlobShas.has(operation.sync.sha)
+          ) {
+            treeRow.content = operation.sync.content;
+          } else {
+            treeRow.sha = operation.sync.sha;
           }
 
           targetTree.push(treeRow);
         }
       }
-    }
+    } // looping through map
 
-    if (this.options.removeOtherFiles) {
-      //process deletes
-      for (const delme of referenceTree.filter(
-        x => !this.__fileMap.has(x.path)
-      )) {
+    //process deletes
+    for (const delme of existingFilesTree) {
+      let operation = this.__treeOperations.get(delme.path);
+
+      if (
+        operation?.remove || //explicit delete
+        (this.options.removeOtherFiles &&
+          (typeof operation?.remove === "undefined" ||
+            operation.remove !== false)) //delete everything with no operation and no save from remove
+      ) {
+        //TODO: fix boolean logic
         let path = outputPath ? `${outputPath}/${delme.path}` : delme.path;
 
         targetTree.push({
@@ -573,17 +590,17 @@ class GitHubTreePush {
    * @param {string | Buffer} value content to use
    */
   syncFile(path, value) {
-    /** @type {TreeFileObject} */
-    let newFile = { sha: gitHubBlobPredictSha(value) };
+    /** @type {TreeFileOperationSync} */
+    let sync = { sha: gitHubBlobPredictSha(value) };
 
     if (Buffer.isBuffer(value)) {
-      newFile.buffer = value;
+      sync.buffer = value;
     } else {
-      newFile.content =
+      sync.content =
         typeof value === "string" ? value : JSON.stringify(value, null, 2);
     }
 
-    this.__fileMap.set(path, newFile);
+    this.__treeOperations.set(path, { sync });
   }
 
   /**
@@ -592,7 +609,16 @@ class GitHubTreePush {
    * @param {string} path path to use for ignored file
    */
   doNotRemoveFile(path) {
-    this.__fileMap.set(path, null);
+    this.__treeOperations.set(path, { remove: false });
+  }
+
+  /**
+   * Sets a file to removed.
+   *
+   * @param {string} path path to use for ignored file
+   */
+  removeFile(path) {
+    this.__treeOperations.set(path, { remove: true });
   }
 
   /**
@@ -600,7 +626,7 @@ class GitHubTreePush {
    */
   async __syncBlobs() {
     //Turn duplicate content into buffers
-    const fileMapValues = [...this.__fileMap.values()];
+    const fileMapValues = [...this.__treeOperations.values()];
 
     const blobPromises = [];
 
@@ -666,7 +692,7 @@ class GitHubTreePush {
       }
 
       //List all the files being uploaded/matched
-      [...this.__fileMap]
+      [...this.__treeOperations]
         .filter(([, value]) => value?.sha === sha)
         .forEach(([key]) => console.log(logNote + key));
     });
