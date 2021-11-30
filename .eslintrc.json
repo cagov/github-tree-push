@@ -11,6 +11,7 @@
     "plugin:jsdoc/recommended",
     "plugin:prettier/recommended"
   ],
+  "plugins": ["prettier", "jsdoc"],
   "parserOptions": {
     "ecmaVersion": 12,
     "sourceType": "module"
@@ -42,6 +43,8 @@
     "jsdoc/require-returns-type": "off",
     "jsdoc/require-property-description": "off",
     "jsdoc/require-param-description": "off",
-    "jsdoc/require-returns-description": "off"
+    "jsdoc/require-returns-description": "off",
+    "prettier/prettier": "error",
+    "arrow-body-style": "off"
   }
 }
