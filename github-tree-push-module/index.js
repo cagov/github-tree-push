@@ -18,7 +18,8 @@ const sha1 = require("sha1");
  */
 /**
  * Returns a Github equivalent sha hash for any given content
- * @param {String | Buffer} content string or Buffer content to hash
+ *
+ * @param {string | Buffer} content string or Buffer content to hash
  * @returns SHA Hash that would be used on Github for the given content
  */
 
@@ -53,11 +54,11 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * @typedef {object} GithubTreeRow
- * @property {String} path
- * @property {String} mode usually '100644'
- * @property {String} type usually 'blob'
- * @property {String | null} [sha]
- * @property {String} [content]
+ * @property {string} path
+ * @property {string} mode usually '100644'
+ * @property {string} type usually 'blob'
+ * @property {string | null} [sha]
+ * @property {string} [content]
  */
 
 /**
@@ -76,6 +77,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * From https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request
+ *
  * @typedef {object} TreePushCommitPullRequestReviewOptions
  * @property {string[]} [reviewers] An array of user logins that will be requested.
  * @property {string[]} [team_reviewers] An array of team slugs that will be requested.
@@ -83,6 +85,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * From https://docs.github.com/en/rest/reference/issues#update-an-issue
+ *
  * @typedef {object} TreePushCommitPullRequestIssueOptions
  * @property {number} [milestone] The number of the milestone to associate this issue.
  * @property {string[]} [labels] Issue labels to apply to the Pull Request.
@@ -91,11 +94,11 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * From https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
+ *
  * @typedef {object} TreePushCommitPullRequestOptions
  * @property {string} [title] The title of the new pull request. (Leave `issue` blank if you use this)
  * @property {number} [issue] Issue number this pull request replaces (Leave `title` blank if you use this)
  * @property {string} [body] The contents describing the pull request.
- * @property {number} [automatic_merge_delay] MS to delay after creating before attempting to merge.
  * @property {boolean} [maintainer_can_modify] Indicates whether maintainers can modify the pull request.
  * @property {boolean} [draft] Indicates whether the pull request is a draft.
  * @property {TreePushCommitPullRequestReviewOptions} [review_options] Options for reviewers.
@@ -146,35 +149,36 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  * Manage a tree for syncing with GitHub
  */
 class GitHubTreePush {
-  options;
-
-  /** @type {Map<string,TreeFileObject | null>} */
-  #fileMap = new Map();
-
-  /**
-   * Stats from the last operation
-   * @type {TreeFileRunStats}
-   */
-  lastRunStats = { Name: "Not Run" };
-
-  /**
-   * A list of all the shas we know exist in GitHub
-   * @type {Set<string>}
-   */
-  #knownBlobShas = new Set();
-
-  /**
-   * The last json object returned from the most recent fetch
-   * @type {*}
-   */
-  lastJson;
-
   /**
    * @param {string} token authentication token
    * @param {TreePushTreeOptions} options describes the target in GitHub
    */
   constructor(token, options) {
     this.options = options;
+
+    /** @type {Map<string,TreeFileObject | null>} */
+    this._fileMap = new Map();
+
+    /**
+     * Stats from the last operation
+     *
+     * @type {TreeFileRunStats}
+     */
+    this.lastRunStats = { Name: "Not Run" };
+
+    /**
+     * The last json object returned from the most recent fetch
+     *
+     * @type {*}
+     */
+    this.lastJson = undefined;
+
+    /**
+     * A list of all the shas we know exist in GitHub
+     *
+     * @type {Set<string>}
+     */
+    this._knownBlobShas = new Set();
 
     /**
      * Hiding the token unless explicitly asked for
@@ -212,6 +216,7 @@ class GitHubTreePush {
 
   /**
    *Common function for creating a PUT option
+   *
    * @param {*} bodyJSON JSON to PUT
    * @param {FetchOptions} [options]
    */
@@ -225,6 +230,7 @@ class GitHubTreePush {
 
   /**
    * Perform an authenticated GET to an API path
+   *
    * @param {string} path
    * @param {FetchOptions} [options]
    * @param {number[]} [okStatusCodes]
@@ -239,6 +245,7 @@ class GitHubTreePush {
 
   /**
    * Perform an authenticated GET to an API path
+   *
    * @param {string} path
    * @param {*} body
    * @param {FetchOptions} [options]
@@ -254,6 +261,7 @@ class GitHubTreePush {
 
   /**
    * fetch a url with options, return a response (Wrapper for fetch)
+   *
    * @param {string} path
    * @param {FetchOptions} [options]
    * @param {number[]} [okStatusCodes]
@@ -290,6 +298,7 @@ class GitHubTreePush {
 
   /**
    * fetch a url and return json
+   *
    * @param {string} path
    * @param {FetchOptions} [options]
    * @param {number[]} [okStatusCodes]
@@ -363,7 +372,7 @@ class GitHubTreePush {
       .map(x => x.sha)
       .forEach(x => {
         if (x) {
-          this.#knownBlobShas.add(x);
+          this._knownBlobShas.add(x);
         }
       });
 
@@ -372,6 +381,7 @@ class GitHubTreePush {
 
   /**
    * returns an update tree that for files in the fileMap that are changed from the referenceTree
+   *
    * @param {GithubTreeRow[]} referenceTree
    */
   _deltaTree(referenceTree) {
@@ -384,7 +394,7 @@ class GitHubTreePush {
     const mode = "100644"; //code for tree blob
     const type = "blob";
 
-    for (const [key, value] of this.#fileMap) {
+    for (const [key, value] of this._fileMap) {
       let existingFile = referenceTree.find(x => x.path === key);
 
       if (value) {
@@ -400,7 +410,7 @@ class GitHubTreePush {
             type
           };
 
-          if (value.content && !this.#knownBlobShas.has(value.sha)) {
+          if (value.content && !this._knownBlobShas.has(value.sha)) {
             treeRow.content = value.content;
           } else if (value.sha) {
             treeRow.sha = value.sha;
@@ -414,7 +424,7 @@ class GitHubTreePush {
     if (this.options.removeOtherFiles) {
       //process deletes
       for (const delme of referenceTree.filter(
-        x => !this.#fileMap.has(x.path)
+        x => !this._fileMap.has(x.path)
       )) {
         let path = outputPath ? `${outputPath}/${delme.path}` : delme.path;
 
@@ -499,14 +509,14 @@ class GitHubTreePush {
         if (x) {
           this.lastRunStats.Text_Content_Uploaded =
             (this.lastRunStats.Text_Content_Uploaded || 0) + 1;
-          this.#knownBlobShas.add(gitHubBlobPredictSha(x));
+          this._knownBlobShas.add(gitHubBlobPredictSha(x));
         }
       });
 
     tree
       .map(x => x.sha)
       .filter(x => x === null)
-      .forEach(x => {
+      .forEach(() => {
         this.lastRunStats.Files_Deleted =
           (this.lastRunStats.Files_Deleted || 0) + 1;
       });
@@ -514,7 +524,7 @@ class GitHubTreePush {
     tree
       .map(x => x.sha)
       .filter(x => x)
-      .forEach(x => {
+      .forEach(() => {
         this.lastRunStats.Files_Referenced =
           (this.lastRunStats.Files_Referenced || 0) + 1;
       });
@@ -526,6 +536,7 @@ class GitHubTreePush {
 
   /**
    * Creates a GitHub compare
+   *
    * @param {GithubCommit} commit
    */
   async _compareCommit(commit) {
@@ -547,8 +558,9 @@ class GitHubTreePush {
 
   /**
    * Sets a single file to the tree to be syncronized - (updated or added)
-   * @param {String} path path to use for publishing file
-   * @param {String | Buffer} value content to use
+   *
+   * @param {string} path path to use for publishing file
+   * @param {string | Buffer} value content to use
    */
   syncFile(path, value) {
     /** @type {TreeFileObject} */
@@ -561,15 +573,16 @@ class GitHubTreePush {
         typeof value === "string" ? value : JSON.stringify(value, null, 2);
     }
 
-    this.#fileMap.set(path, newFile);
+    this._fileMap.set(path, newFile);
   }
 
   /**
    * Sets a file to not be removed when `removeOtherFiles:true`.
+   *
    * @param {string} path path to use for ignored file
    */
   doNotRemoveFile(path) {
-    this.#fileMap.set(path, null);
+    this._fileMap.set(path, null);
   }
 
   /**
@@ -577,14 +590,14 @@ class GitHubTreePush {
    */
   async _syncBlobs() {
     //Turn duplicate content into buffers
-    const fileMapValues = [...this.#fileMap.values()];
+    const fileMapValues = [...this._fileMap.values()];
 
     const blobPromises = [];
 
     //Push Buffers
     for (const value of fileMapValues) {
       if (value) {
-        if (!this.#knownBlobShas.has(value.sha)) {
+        if (!this._knownBlobShas.has(value.sha)) {
           if (value.content) {
             //If the content is duplicate, or too large, use a buffer
             if (
@@ -603,7 +616,7 @@ class GitHubTreePush {
           //If buffer and the sha is not already confirmed uploaded, check it and upload.
           if (value.buffer) {
             blobPromises.push(this._putBlobInRepo(value.sha, value.buffer));
-            this.#knownBlobShas.add(value.sha);
+            this._knownBlobShas.add(value.sha);
           }
         }
       }
@@ -617,6 +630,7 @@ class GitHubTreePush {
 
   /**
    * Makes sure the blob is in the repo
+   *
    * @param {string} sha
    * @param {Buffer} buffer
    */
@@ -642,7 +656,7 @@ class GitHubTreePush {
       }
 
       //List all the files being uploaded/matched
-      [...this.#fileMap]
+      [...this._fileMap]
         .filter(([, value]) => value?.sha === sha)
         .forEach(([key]) => console.log(logNote + key));
     });
@@ -661,6 +675,7 @@ class GitHubTreePush {
 
   /**
    * Internal function used for polling Pr Status
+   *
    * @param {number} prnumber
    * @param {PrStatus} [originalData]
    */
@@ -701,6 +716,7 @@ class GitHubTreePush {
 
   /**
    * Internal function used for polling Pr CHECK Status
+   *
    * @param {string} commitsha
    * @param {PrCheckStatus} [originalData]
    */

@@ -1,6 +1,7 @@
 //@ts-check
 //Loading environment variables
 const { Values } = require("../local.settings.json");
+
 // @ts-ignore
 Object.keys(Values).forEach(x => (process.env[x] = Values[x])); //Load local settings file for testing
 
@@ -22,11 +23,11 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
 
   const suffix = "1"; //new Date().toString();
 
-  tree1.syncFile("A/A/fileAA1.txt", "A" + suffix);
-  tree1.syncFile("A/A/fileAA2.txt", "B" + suffix);
-  tree1.syncFile("A/B/fileAB1.txt", "C" + suffix);
-  tree1.syncFile("A/B/fileAB2.txt", "D" + suffix);
-  tree1.syncFile("Target File.txt", "E" + suffix);
+  tree1.syncFile("A/A/fileAA1.txt", `A${suffix}`);
+  tree1.syncFile("A/A/fileAA2.txt", `B${suffix}`);
+  tree1.syncFile("A/B/fileAB1.txt", `C${suffix}`);
+  tree1.syncFile("A/B/fileAB2.txt", `D${suffix}`);
+  tree1.syncFile("Target File.txt", `E${suffix}`);
 
   tree1.syncFile(
     "Special Path옹엄얼언웅워원월/Special File옹엄얼언웅워원월.txt",
