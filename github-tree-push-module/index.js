@@ -154,10 +154,19 @@ class GitHubTreePush {
    * @param {TreePushTreeOptions} options describes the target in GitHub
    */
   constructor(token, options) {
+    /**
+     * (private) All registered files for the tree operation
+     *
+     * @type {TreePushTreeOptions}
+     */
     this.options = options;
 
-    /** @type {Map<string,TreeFileObject | null>} */
-    this._fileMap = new Map();
+    /**
+     *  (private) All registered files for the tree operation
+     *
+     * @type {Map<string,TreeFileObject | null>}
+     */
+    this.__fileMap = new Map();
 
     /**
      * Stats from the last operation
@@ -174,14 +183,16 @@ class GitHubTreePush {
     this.lastJson = undefined;
 
     /**
-     * A list of all the shas we know exist in GitHub
+     * (private) A list of all the shas we know exist in GitHub
      *
      * @type {Set<string>}
      */
-    this._knownBlobShas = new Set();
+    this.__knownBlobShas = new Set();
 
     /**
      * Hiding the token unless explicitly asked for
+     *
+     * @type {function():string}
      */
     this.getToken = () => token;
 
@@ -372,7 +383,7 @@ class GitHubTreePush {
       .map(x => x.sha)
       .forEach(x => {
         if (x) {
-          this._knownBlobShas.add(x);
+          this.__knownBlobShas.add(x);
         }
       });
 
@@ -394,7 +405,7 @@ class GitHubTreePush {
     const mode = "100644"; //code for tree blob
     const type = "blob";
 
-    for (const [key, value] of this._fileMap) {
+    for (const [key, value] of this.__fileMap) {
       let existingFile = referenceTree.find(x => x.path === key);
 
       if (value) {
@@ -410,7 +421,7 @@ class GitHubTreePush {
             type
           };
 
-          if (value.content && !this._knownBlobShas.has(value.sha)) {
+          if (value.content && !this.__knownBlobShas.has(value.sha)) {
             treeRow.content = value.content;
           } else if (value.sha) {
             treeRow.sha = value.sha;
@@ -424,7 +435,7 @@ class GitHubTreePush {
     if (this.options.removeOtherFiles) {
       //process deletes
       for (const delme of referenceTree.filter(
-        x => !this._fileMap.has(x.path)
+        x => !this.__fileMap.has(x.path)
       )) {
         let path = outputPath ? `${outputPath}/${delme.path}` : delme.path;
 
@@ -509,7 +520,7 @@ class GitHubTreePush {
         if (x) {
           this.lastRunStats.Text_Content_Uploaded =
             (this.lastRunStats.Text_Content_Uploaded || 0) + 1;
-          this._knownBlobShas.add(gitHubBlobPredictSha(x));
+          this.__knownBlobShas.add(gitHubBlobPredictSha(x));
         }
       });
 
@@ -573,7 +584,7 @@ class GitHubTreePush {
         typeof value === "string" ? value : JSON.stringify(value, null, 2);
     }
 
-    this._fileMap.set(path, newFile);
+    this.__fileMap.set(path, newFile);
   }
 
   /**
@@ -582,7 +593,7 @@ class GitHubTreePush {
    * @param {string} path path to use for ignored file
    */
   doNotRemoveFile(path) {
-    this._fileMap.set(path, null);
+    this.__fileMap.set(path, null);
   }
 
   /**
@@ -590,14 +601,14 @@ class GitHubTreePush {
    */
   async _syncBlobs() {
     //Turn duplicate content into buffers
-    const fileMapValues = [...this._fileMap.values()];
+    const fileMapValues = [...this.__fileMap.values()];
 
     const blobPromises = [];
 
     //Push Buffers
     for (const value of fileMapValues) {
       if (value) {
-        if (!this._knownBlobShas.has(value.sha)) {
+        if (!this.__knownBlobShas.has(value.sha)) {
           if (value.content) {
             //If the content is duplicate, or too large, use a buffer
             if (
@@ -616,7 +627,7 @@ class GitHubTreePush {
           //If buffer and the sha is not already confirmed uploaded, check it and upload.
           if (value.buffer) {
             blobPromises.push(this._putBlobInRepo(value.sha, value.buffer));
-            this._knownBlobShas.add(value.sha);
+            this.__knownBlobShas.add(value.sha);
           }
         }
       }
@@ -656,7 +667,7 @@ class GitHubTreePush {
       }
 
       //List all the files being uploaded/matched
-      [...this._fileMap]
+      [...this.__fileMap]
         .filter(([, value]) => value?.sha === sha)
         .forEach(([key]) => console.log(logNote + key));
     });
