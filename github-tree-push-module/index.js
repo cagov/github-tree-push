@@ -4,10 +4,11 @@ const fetch = require("fetch-retry")(require("node-fetch/lib"), {
   retryDelay: 2000
 });
 
-/**
- * Default title used when one isn't specified for a Pull Request
- */
+/** Default title used when one isn't specified for a Pull Request */
 const defaultPullRequestTitle = "Tree Push Pull Request";
+
+/** Default value for contentToBlobBytes */
+const default_contentToBlobBytes = 50000;
 
 const sha1 = require("sha1");
 /*
@@ -196,12 +197,10 @@ class GitHubTreePush {
      */
     this.__token = () => token;
 
-    if (typeof this.options.recursive === "undefined") {
-      this.options.recursive = true; //default to true
-    }
-    if (typeof this.options.contentToBlobBytes === "undefined") {
-      this.options.contentToBlobBytes = 50000; //default to 50000
-    }
+    this.options.recursive = this.options.recursive ?? true; //default to true
+
+    this.options.contentToBlobBytes =
+      this.options.contentToBlobBytes ?? default_contentToBlobBytes; //default size
   }
 
   __gitAuthheader() {
