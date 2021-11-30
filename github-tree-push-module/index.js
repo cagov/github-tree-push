@@ -204,7 +204,7 @@ class GitHubTreePush {
     }
   }
 
-  _gitAuthheader() {
+  __gitAuthheader() {
     return {
       Authorization: `Bearer ${this.__token()}`,
       "Content-Type": "application/json",
@@ -217,11 +217,11 @@ class GitHubTreePush {
    *
    * @param {FetchOptions} [options] Options to override the defaults
    */
-  _gitDefaultOptions(options) {
+  __gitDefaultOptions(options) {
     return {
       method: "GET",
       ...options,
-      headers: { ...this._gitAuthheader(), ...options?.headers }
+      headers: { ...this.__gitAuthheader(), ...options?.headers }
     };
   }
 
@@ -231,9 +231,9 @@ class GitHubTreePush {
    * @param {*} bodyJSON JSON to PUT
    * @param {FetchOptions} [options]
    */
-  _gitPostOptions(bodyJSON, options) {
+  __gitPostOptions(bodyJSON, options) {
     return {
-      ...this._gitDefaultOptions(options),
+      ...this.__gitDefaultOptions(options),
       method: options?.method || "POST",
       body: JSON.stringify(bodyJSON)
     };
@@ -246,10 +246,10 @@ class GitHubTreePush {
    * @param {FetchOptions} [options]
    * @param {number[]} [okStatusCodes]
    */
-  async _getSomeJson(path, options, okStatusCodes) {
-    return this._fetchJSON(
+  async __getSomeJson(path, options, okStatusCodes) {
+    return this.__fetchJSON(
       path,
-      this._gitDefaultOptions(options),
+      this.__gitDefaultOptions(options),
       okStatusCodes
     );
   }
@@ -262,10 +262,10 @@ class GitHubTreePush {
    * @param {FetchOptions} [options]
    * @param {number[]} [okStatusCodes]
    */
-  async _postSomeJson(path, body, options, okStatusCodes) {
-    return this._fetchJSON(
+  async __postSomeJson(path, body, options, okStatusCodes) {
+    return this.__fetchJSON(
       path,
-      this._gitPostOptions(body, options),
+      this.__gitPostOptions(body, options),
       okStatusCodes
     );
   }
@@ -277,7 +277,7 @@ class GitHubTreePush {
    * @param {FetchOptions} [options]
    * @param {number[]} [okStatusCodes]
    */
-  async _fetchResponse(path, options, okStatusCodes) {
+  async __fetchResponse(path, options, okStatusCodes) {
     const apiURL = `https://api.github.com/repos/${this.options.owner}/${this.options.repo}${path}`;
 
     //All these request have required auth
@@ -314,8 +314,8 @@ class GitHubTreePush {
    * @param {FetchOptions} [options]
    * @param {number[]} [okStatusCodes]
    */
-  async _fetchJSON(path, options, okStatusCodes) {
-    const response = await this._fetchResponse(path, options, okStatusCodes);
+  async __fetchJSON(path, options, okStatusCodes) {
+    const response = await this.__fetchResponse(path, options, okStatusCodes);
 
     const contentType = response.headers.get("content-type");
 
@@ -338,7 +338,7 @@ class GitHubTreePush {
   /**
    * Get the tree from the remote repository
    */
-  async _readTree() {
+  async __readTree() {
     const outputPath = this.options.path;
     const masterBranch = this.options.base;
 
@@ -348,7 +348,7 @@ class GitHubTreePush {
 
       const pathRootTree = outputPath.split("/").slice(0, -1).join("/"); //gets the parent folder to the output path
       /** @type {GithubTreeRow[]} */
-      const rootTree = await this._getSomeJson(
+      const rootTree = await this.__getSomeJson(
         `/contents/${pathRootTree}?ref=${masterBranch}` //https://docs.github.com/en/rest/reference/repos#contents
       );
 
@@ -368,7 +368,7 @@ class GitHubTreePush {
     //update the referenceTree to match the remote tree
 
     /** @type {{sha:string,truncated:boolean,tree:GithubTreeRow[]}}} */
-    const treeResult = await this._getSomeJson(
+    const treeResult = await this.__getSomeJson(
       `/git/trees/${treeUrl}${recursiveOption}`
     );
     if (treeResult.truncated) {
@@ -395,7 +395,7 @@ class GitHubTreePush {
    *
    * @param {GithubTreeRow[]} referenceTree
    */
-  _deltaTree(referenceTree) {
+  __deltaTree(referenceTree) {
     const outputPath = this.options.path;
 
     /** @type {GithubTreeRow[]} */
@@ -457,7 +457,7 @@ class GitHubTreePush {
    * @param {GithubTreeRow[]} tree from createTreeFromFileMap
    * @param {string} [commit_message] optional commit message
    */
-  async _createCommitFromTree(tree, commit_message) {
+  async __createCommitFromTree(tree, commit_message) {
     if (!tree.length) {
       return null;
     }
@@ -486,7 +486,7 @@ class GitHubTreePush {
 
     //Grab the starting point for a fresh tree
     /** @type {{object:{sha:string}}} */
-    const refResult = await this._getSomeJson(
+    const refResult = await this.__getSomeJson(
       `/git/refs/heads/${targetBranch}`
     );
 
@@ -499,7 +499,7 @@ class GitHubTreePush {
       rowCount += treePart.length;
       console.log(`Creating tree - ${rowCount}/${totalRows} items`);
 
-      createTreeResult = await this._postSomeJson("/git/trees", {
+      createTreeResult = await this.__postSomeJson("/git/trees", {
         tree: treePart,
         base_tree: createTreeResult.sha
       });
@@ -507,7 +507,7 @@ class GitHubTreePush {
 
     //Create a commit the maps to all the tree changes
     /** @type {GithubCommit} */
-    const commitResult = await this._postSomeJson("/git/commits", {
+    const commitResult = await this.__postSomeJson("/git/commits", {
       parents: [baseSha],
       tree: createTreeResult.sha,
       message: commit_message || ""
@@ -550,7 +550,7 @@ class GitHubTreePush {
    *
    * @param {GithubCommit} commit
    */
-  async _compareCommit(commit) {
+  async __compareCommit(commit) {
     if (!commit?.parents) {
       return null;
     }
@@ -560,7 +560,7 @@ class GitHubTreePush {
     //https://docs.github.com/en/rest/reference/repos#compare-two-commits
     //Compare the proposed commit with the trunk (master) branch
     /** @type {{commits:{commmit:GithubCommit}[],files:GithubCompareFile[]}} */
-    const compare = await this._getSomeJson(
+    const compare = await this.__getSomeJson(
       `/compare/${baseSha}...${commitSha}`
     );
 
@@ -599,7 +599,7 @@ class GitHubTreePush {
   /**
    * Based on the current file map, upload blobs, including duplicate content and large content
    */
-  async _syncBlobs() {
+  async __syncBlobs() {
     //Turn duplicate content into buffers
     const fileMapValues = [...this.__fileMap.values()];
 
@@ -626,7 +626,7 @@ class GitHubTreePush {
 
           //If buffer and the sha is not already confirmed uploaded, check it and upload.
           if (value.buffer) {
-            blobPromises.push(this._putBlobInRepo(value.sha, value.buffer));
+            blobPromises.push(this.__putBlobInRepo(value.sha, value.buffer));
             this.__knownBlobShas.add(value.sha);
           }
         }
@@ -645,11 +645,11 @@ class GitHubTreePush {
    * @param {string} sha
    * @param {Buffer} buffer
    */
-  async _putBlobInRepo(sha, buffer) {
-    return this._fetchResponse(
+  async __putBlobInRepo(sha, buffer) {
+    return this.__fetchResponse(
       //https://docs.github.com/en/rest/reference/git#get-a-blob
       `/git/blobs/${sha}`,
-      this._gitDefaultOptions({ method: "HEAD" }),
+      this.__gitDefaultOptions({ method: "HEAD" }),
       [404]
     ).then(async headResult => {
       let logNote = "Found...";
@@ -657,7 +657,7 @@ class GitHubTreePush {
         logNote = "Uploading...";
 
         //https://docs.github.com/en/rest/reference/git#blobs
-        await this._postSomeJson("/git/blobs", {
+        await this.__postSomeJson("/git/blobs", {
           content: buffer.toString("base64"),
           encoding: "base64"
         });
@@ -690,7 +690,7 @@ class GitHubTreePush {
    * @param {number} prnumber
    * @param {PrStatus} [originalData]
    */
-  async _getPrStatus(prnumber, originalData) {
+  async __getPrStatus(prnumber, originalData) {
     const header = originalData?.etag
       ? {
           headers: { "If-None-Match": originalData.etag }
@@ -699,7 +699,7 @@ class GitHubTreePush {
 
     //https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
     /** @type {PrStatus} */
-    const jsonResult = await this._getSomeJson(`/pulls/${prnumber}`, header, [
+    const jsonResult = await this.__getSomeJson(`/pulls/${prnumber}`, header, [
       304
     ]);
 
@@ -731,7 +731,7 @@ class GitHubTreePush {
    * @param {string} commitsha
    * @param {PrCheckStatus} [originalData]
    */
-  async _getPrCheckStatus(commitsha, originalData) {
+  async __getPrCheckStatus(commitsha, originalData) {
     const header = originalData?.etag
       ? {
           headers: { "If-None-Match": originalData.etag }
@@ -740,7 +740,7 @@ class GitHubTreePush {
 
     //https://docs.github.com/en/rest/reference/checks#list-check-runs-for-a-git-reference
     /** @type {PrCheckStatus} */
-    const jsonResult = await this._getSomeJson(
+    const jsonResult = await this.__getSomeJson(
       `/commits/${commitsha}/check-runs`,
       header,
       [304]
@@ -770,13 +770,13 @@ class GitHubTreePush {
       Name: `treePush - ${this.options.commit_message || "(No commit message)"}`
     };
 
-    const referenceTree = await this._readTree();
+    const referenceTree = await this.__readTree();
 
-    await this._syncBlobs();
+    await this.__syncBlobs();
 
-    const updatetree = this._deltaTree(referenceTree);
+    const updatetree = this.__deltaTree(referenceTree);
 
-    const commit = await this._createCommitFromTree(
+    const commit = await this.__createCommitFromTree(
       updatetree,
       this.options.commit_message
     );
@@ -784,7 +784,7 @@ class GitHubTreePush {
     if (!commit) {
       console.log("Nothing to commit.");
     } else {
-      const compare = await this._compareCommit(commit);
+      const compare = await this.__compareCommit(commit);
 
       if (compare?.files.length) {
         //Changes to apply
@@ -809,7 +809,7 @@ class GitHubTreePush {
           delete pull_request_options.automatic_merge_delay;
 
           //https://docs.github.com/en/rest/reference/git#create-a-reference
-          await this._postSomeJson("/git/refs", {
+          await this.__postSomeJson("/git/refs", {
             sha: commit.sha,
             ref: `refs/heads/${newBranchName}`
           });
@@ -826,11 +826,11 @@ class GitHubTreePush {
 
           //https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
           /** @type {{number:number,head:{ref:string},html_url:string}} */
-          const prResult = await this._postSomeJson("/pulls", prOptions);
+          const prResult = await this.__postSomeJson("/pulls", prOptions);
 
           if (issue_options) {
             //https://docs.github.com/en/rest/reference/issues#update-an-issue
-            await this._postSomeJson(
+            await this.__postSomeJson(
               `/issues/${prResult.number}`,
               issue_options,
               {
@@ -841,7 +841,7 @@ class GitHubTreePush {
 
           if (review_options) {
             //https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request
-            await this._postSomeJson(
+            await this.__postSomeJson(
               `/pulls/${prResult.number}/requested_reviewers`,
               review_options
             );
@@ -852,8 +852,8 @@ class GitHubTreePush {
               console.log(`Waiting ${auto_merge_delay}ms before merging PR...`);
               await sleep(auto_merge_delay);
             }
-            let checkStatus = await this._getPrCheckStatus(commit.sha);
-            let prStatus = await this._getPrStatus(prResult.number);
+            let checkStatus = await this.__getPrCheckStatus(commit.sha);
+            let prStatus = await this.__getPrStatus(prResult.number);
 
             let waitAttemps = 0;
 
@@ -872,9 +872,9 @@ class GitHubTreePush {
 
               await sleep(1000);
 
-              prStatus = await this._getPrStatus(prResult.number, prStatus);
+              prStatus = await this.__getPrStatus(prResult.number, prStatus);
 
-              checkStatus = await this._getPrCheckStatus(
+              checkStatus = await this.__getPrCheckStatus(
                 commit.sha,
                 checkStatus
               );
@@ -902,7 +902,7 @@ class GitHubTreePush {
             );
 
             //https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request
-            await this._postSomeJson(
+            await this.__postSomeJson(
               `/pulls/${prResult.number}/merge`,
               { merge_method: "squash" },
               {
@@ -911,17 +911,17 @@ class GitHubTreePush {
             );
 
             //Check before deleting (In case of auto-delete)
-            const headResult = await this._fetchResponse(
+            const headResult = await this.__fetchResponse(
               `/git/refs/heads/${prResult.head.ref}`,
-              this._gitDefaultOptions({ method: "HEAD" }),
+              this.__gitDefaultOptions({ method: "HEAD" }),
               [404]
             );
 
             if (headResult.ok) {
               //https://docs.github.com/en/rest/reference/git#delete-a-reference
-              await this._fetchResponse(
+              await this.__fetchResponse(
                 `/git/refs/heads/${prResult.head.ref}`,
-                this._gitDefaultOptions({ method: "DELETE" })
+                this.__gitDefaultOptions({ method: "DELETE" })
               );
             }
           }
@@ -929,7 +929,7 @@ class GitHubTreePush {
         } else {
           //Just a simple commit on this branch
           //https://docs.github.com/en/rest/reference/git#update-a-reference
-          await this._postSomeJson(
+          await this.__postSomeJson(
             `/git/refs/heads/${this.options.base}`,
             {
               sha: commit.sha
