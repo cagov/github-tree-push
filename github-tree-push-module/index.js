@@ -45,8 +45,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @property {string} base **Required.** The name of the base branch that the head will be merged into (main/etc).
  * @property {string} [path] Starting path in the repo for changes to start from. Defaults to root.
  * @property {boolean} [removeOtherFiles] `true` to remove other files in the path when pushing.
- * @property {boolean} [recursive] `true` to compare sub-folders too.
- * @property {number} [contentToBlobBytes] Content bytes allowed in content tree before turning it into a separate blob upload. Default 1000.
+ * @property {boolean} [recursive] `true` to compare sub-folders too.  Default `true`.
+ * @property {number} [contentToBlobBytes] Content bytes allowed in content tree before turning it into a separate blob upload. Default 50000.
  * @property {string} [commit_message] Name to identify the Commit.
  * @property {boolean} [pull_request] `true` to use a Pull Request.
  * @property {TreePushCommitPullRequestOptions} [pull_request_options] Options if using a Pull Request. See https://docs.github.com/en/rest/reference/pulls#create-a-pull-request
@@ -173,7 +173,7 @@ class GitHubTreePush {
      *
      * @type {TreeFileRunStats}
      */
-    this.lastRunStats = { Name: "Not Run" };
+    this.lastRunStats = { Name: "Not run" };
 
     /**
      * The last json object returned from the most recent fetch
@@ -194,19 +194,19 @@ class GitHubTreePush {
      *
      * @type {function():string}
      */
-    this.getToken = () => token;
+    this.__token = () => token;
 
     if (typeof this.options.recursive === "undefined") {
       this.options.recursive = true; //default to true
     }
     if (typeof this.options.contentToBlobBytes === "undefined") {
-      this.options.contentToBlobBytes = 1000; //default to 1000
+      this.options.contentToBlobBytes = 50000; //default to 50000
     }
   }
 
   _gitAuthheader() {
     return {
-      Authorization: `Bearer ${this.getToken()}`,
+      Authorization: `Bearer ${this.__token()}`,
       "Content-Type": "application/json",
       "User-Agent": "cagov-github-tree-push",
       Accept: "application/vnd.github.v3+json" //https://docs.github.com/en/rest/overview/resources-in-the-rest-api#current-version
