@@ -413,8 +413,7 @@ class GitHubTreePush {
     for (const [opPath, operation] of this.__treeOperations) {
       let existingFile = existingFilesTree.find(x => x.path === opPath);
 
-      if (operation.remove !== undefined) {
-      } else if (operation.sync) {
+      if (operation.sync) {
         //Add / Update
 
         if (existingFile?.sha !== operation.sync.sha) {
@@ -632,27 +631,30 @@ class GitHubTreePush {
 
     //Push Buffers
     for (const value of fileMapValues) {
-      if (value) {
-        if (!this.__knownBlobShas.has(value.sha)) {
-          if (value.content) {
+      if (value.sync) {
+        if (!this.__knownBlobShas.has(value.sync.sha)) {
+          if (value.sync.content) {
             //If the content is duplicate, or too large, use a buffer
             if (
-              Buffer.byteLength(value.content, "utf8") >
+              Buffer.byteLength(value.sync.content, "utf8") >
               (this.options?.contentToBlobBytes ??
-                fileMapValues.filter(x => x?.sha === value.sha).length > 1) //2 or more found
+                fileMapValues.filter(x => x.sync?.sha === value.sync?.sha)
+                  .length > 1) //2 or more found
             ) {
               //content converted to blobs
               this.lastRunStats.Content_Converted_To_Blobs =
                 (this.lastRunStats.Content_Converted_To_Blobs || 0) + 1;
-              value.buffer = Buffer.from(value.content);
-              delete value.content;
+              value.sync.buffer = Buffer.from(value.sync.content);
+              delete value.sync.content;
             }
           }
 
           //If buffer and the sha is not already confirmed uploaded, check it and upload.
-          if (value.buffer) {
-            blobPromises.push(this.__putBlobInRepo(value.sha, value.buffer));
-            this.__knownBlobShas.add(value.sha);
+          if (value.sync.buffer) {
+            blobPromises.push(
+              this.__putBlobInRepo(value.sync.sha, value.sync.buffer)
+            );
+            this.__knownBlobShas.add(value.sync.sha);
           }
         }
       }
@@ -693,7 +695,7 @@ class GitHubTreePush {
 
       //List all the files being uploaded/matched
       [...this.__treeOperations]
-        .filter(([, value]) => value?.sha === sha)
+        .filter(([, value]) => value.sync?.sha === sha)
         .forEach(([key]) => console.log(logNote + key));
     });
   }
