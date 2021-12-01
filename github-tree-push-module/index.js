@@ -596,7 +596,7 @@ class GitHubTreePush {
   /**
    * Sets a file to not be removed when `removeOtherFiles:true`.
    *
-   * @param {string} path path to use for ignored file
+   * @param {string} path path of file to be preserved.
    */
   doNotRemoveFile(path) {
     this.__treeOperations.set(path, { remove: false });
@@ -605,7 +605,7 @@ class GitHubTreePush {
   /**
    * Sets a file to removed.
    *
-   * @param {string} path path to use for ignored file
+   * @param {string} path path of file to be removed.
    */
   removeFile(path) {
     this.__treeOperations.set(path, { remove: true });
