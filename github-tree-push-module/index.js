@@ -403,29 +403,36 @@ class GitHubTreePush {
   __deltaTree(existingFilesTree) {
     const outputPath = this.options.path;
 
+    //process auto deletes
+    if (this.options.removeOtherFiles) {
+      existingFilesTree
+        .map(f => f.path)
+        .filter(path => !this.__treeOperations.has(path))
+        .forEach(path => {
+          this.removeFile(path);
+        });
+    }
+
     /** @type {GithubTreeRow[]} */
     const targetTree = [];
-    //Tree parts...
-    //https://docs.github.com/en/free-pro-team@latest/rest/reference/git#create-a-tree
-    const mode = "100644"; //code for tree blob
-    const type = "blob";
 
     for (const [opPath, operation] of this.__treeOperations) {
       let existingFile = existingFilesTree.find(x => x.path === opPath);
+
+      //Tree parts...
+      //https://docs.github.com/en/free-pro-team@latest/rest/reference/git#create-a-tree
+      /** @type {GithubTreeRow} */
+      let treeRow = {
+        path: outputPath ? `${outputPath}/${opPath}` : opPath,
+        mode: "100644", //code for tree blob,
+        type: "blob"
+      };
 
       if (operation.sync) {
         //Add / Update
 
         if (existingFile?.sha !== operation.sync.sha) {
-          //Change detected
-          let path = outputPath ? `${outputPath}/${opPath}` : opPath;
-
-          /** @type {GithubTreeRow} */
-          const treeRow = {
-            path,
-            mode,
-            type
-          };
+          //Change detected (Add or Update)
 
           if (
             operation.sync.content &&
@@ -438,30 +445,14 @@ class GitHubTreePush {
 
           targetTree.push(treeRow);
         }
+      } else if (existingFile && operation.remove) {
+        //Specific removal request of existing file
+
+        treeRow.sha = null; //will trigger a delete
+
+        targetTree.push(treeRow);
       }
-    } // looping through map
-
-    //process deletes
-    for (const delme of existingFilesTree) {
-      let operation = this.__treeOperations.get(delme.path);
-
-      if (
-        operation?.remove || //explicit delete
-        (this.options.removeOtherFiles &&
-          (typeof operation?.remove === "undefined" ||
-            operation.remove !== false)) //delete everything with no operation and no save from remove
-      ) {
-        //TODO: fix boolean logic
-        let path = outputPath ? `${outputPath}/${delme.path}` : delme.path;
-
-        targetTree.push({
-          path,
-          mode,
-          type,
-          sha: null //will trigger a delete
-        });
-      }
-    }
+    } // looping through __treeOperations
 
     return targetTree;
   }

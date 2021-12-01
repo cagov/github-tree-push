@@ -27,7 +27,10 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
   tree1.syncFile("A/A/fileAA2.txt", `B${suffix}`);
   tree1.syncFile("A/B/fileAB1.txt", `C${suffix}`);
   tree1.syncFile("A/B/fileAB2.txt", `D${suffix}`);
-  tree1.syncFile("Target File.txt", `E${suffix}`);
+  tree1.syncFile("Target File.txt", `2E${suffix}`);
+
+  //tree1.removeFile("Target File.txt");
+  //tree1.doNotRemoveFile("Target File.txt");
 
   tree1.syncFile(
     "Special Path옹엄얼언웅워원월/Special File옹엄얼언웅워원월.txt",
@@ -66,6 +69,8 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
   rootTree.syncFile("Root File.txt", "Root File Data");
   rootTree.syncFile("Root Buffer.txt", binaryData);
   rootTree.syncFile("Root Buffer2.txt", binaryData);
+  //rootTree.removeFile("Root File.txt");
+  //rootTree.doNotRemoveFile("Root File.txt");
 
   await rootTree.treePush();
 
