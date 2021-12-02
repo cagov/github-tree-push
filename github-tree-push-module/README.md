@@ -69,7 +69,6 @@ await tree1.treePush();
 You can get information about the last push operation using `lastRunStats`. Details [Below](#lastRunStats-output).
 
 ```js
-//See the results
 console.log(JSON.stringify(tree1.lastRunStats, null, 2));
 ```
 
