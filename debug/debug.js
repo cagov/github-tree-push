@@ -21,7 +21,7 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
     contentToBlobBytes: 1
   });
 
-  const suffix = "1"; //new Date().toString();
+  const suffix = "2"; //new Date().toString();
 
   tree1.syncFile("A/A/fileAA1.txt", `A${suffix}`);
   tree1.syncFile("A/A/fileAA2.txt", `B${suffix}`);

@@ -34,7 +34,7 @@ const token = process.env["GITHUB_TOKEN"]; //Keep your GitHub token safe
 
 ### Setting up a tree
 
-Declare your GitHub target (`owner`/`repo`/`base`/`path`) in each tree instance you create. Detailed options [Below](#treepush-options).
+Declare your GitHub target (`owner`/`repo`/`base`/`path`) in each tree instance you create. Detailed options [Below].(#treepush-options).
 
 ```js
 let tree1 = new treePush(token, {
@@ -68,7 +68,7 @@ console.log(JSON.stringify(tree1.lastRunStats, null, 2));
 
 ### Alternate tree setup for Pull Requests
 
-There are many options for sending your content as a Pull Request.
+There are many options for sending your content as a Pull Request. Detailed options [Below](#pull-request-options).
 
 ```js
 let tree1 = new treePush(token, {
@@ -137,34 +137,34 @@ Push all the files added to the tree to the repository.
 
 #### `treePush` options
 
-| Property Name              | Type    | Description                                                                                        |
-| :------------------------- | :------ | :------------------------------------------------------------------------------------------------- |
-| **`owner`**                | string  | **Required.** GitHub _owner_ path.                                                                 |
-| **`repo`**                 | string  | **Required.** GitHub _repo_ path.                                                                  |
-| **`base`**                 | string  | **Required.** The name of the base branch that the head will be merged into (main/etc).            |
-| **`path`**                 | string  | Starting path in the repo for changes to start from. Defaults to root.                             |
-| **`deleteOtherFiles`**     | boolean | `true` to delete other files in the path when pushing.                                             |
-| **`recursive`**            | boolean | `true` to compare sub-folders too.                                                                 |
-| **`contentToBlobBytes`**   | number  | Content bytes allowed in content tree before turning it into a separate blob upload. Default 1000. |
-| **`commit_message`**       | string  | Name to identify the Commit.                                                                       |
-| **`pull_request`**         | boolean | `true` to use a Pull Request.                                                                      |
-| **`pull_request_options`** | object  | Options if using a Pull Request. See [Below](#pull-request-options).                               |
+| Property Name              | Type    | Default               | Description                                                                             |
+| :------------------------- | :------ | :-------------------- | :-------------------------------------------------------------------------------------- |
+| **`owner`**                | string  |                       | **Required.** GitHub _owner_ path.                                                      |
+| **`repo`**                 | string  |                       | **Required.** GitHub _repo_ path.                                                       |
+| **`base`**                 | string  |                       | **Required.** The name of the base branch that the head will be merged into (main/etc). |
+| **`path`**                 | string  | `/`                   | Starting path in the repo for changes to start from.                                    |
+| **`deleteOtherFiles`**     | boolean | `false`               | `true` to delete other files in the path when pushing.                                  |
+| **`recursive`**            | boolean | `true`                | `true` to compare sub-folders too.                                                      |
+| **`contentToBlobBytes`**   | number  | `50000`               | Content bytes allowed in content tree before turning it into a separate blob upload.    |
+| **`commit_message`**       | string  | `"No commit message"` | Name to identify the Commit.                                                            |
+| **`pull_request`**         | boolean | `false`               | `true` to use a Pull Request.                                                           |
+| **`pull_request_options`** | object  | `{}`                  | Options if using a Pull Request. See [Below](#pull-request-options).                    |
 
 #### Pull Request options
 
 Options orginating from [GitHub Pull Request Docs](https://docs.github.com/en/rest/reference/pulls#create-a-pull-request).
 
-| Property Name               | Type    | Description                                                                    |
-| :-------------------------- | :------ | :----------------------------------------------------------------------------- |
-| **`title`**                 | string  | The title of the new pull request. (Leave `issue` blank if you use this)       |
-| **`issue`**                 | number  | Issue number this pull request replaces (Leave `title` blank if you use this)  |
-| **`body`**                  | string  | The contents describing the pull request.                                      |
-| **`maintainer_can_modify`** | boolean | Indicates whether maintainers can modify the pull request.                     |
-| **`draft`**                 | boolean | Indicates whether the pull request is a draft.                                 |
-| **`review_options`**        | string  | Options for reviewers. See [Below](#pull-request-review-options).              |
-| **`issue_options`**         | string  | Options for issue. See [Below](#pull-request-issue-options).                   |
-| **`automatic_merge`**       | boolean | `true` to merge the PR after creating it. Will wait for status checks to pass. |
-| **`automatic_merge_delay`** | number  | MS to delay after creating before attempting to merge.                         |
+| Property Name               | Type    | Default | Description                                                                    |
+| :-------------------------- | :------ | :------ | :----------------------------------------------------------------------------- |
+| **`title`**                 | string  |         | The title of the new pull request. (Leave `issue` blank if you use this)       |
+| **`issue`**                 | number  |         | Issue number this pull request replaces (Leave `title` blank if you use this)  |
+| **`body`**                  | string  |         | The contents describing the pull request.                                      |
+| **`maintainer_can_modify`** | boolean | `false` | Indicates whether maintainers can modify the pull request.                     |
+| **`draft`**                 | boolean | `false` | Indicates whether the pull request is a draft.                                 |
+| **`review_options`**        | object  | `{}`    | Options for reviewers. See [Below](#pull-request-review-options).              |
+| **`issue_options`**         | object  | `{}`    | Options for issue. See [Below](#pull-request-issue-options).                   |
+| **`automatic_merge`**       | boolean | `false` | `true` to merge the PR after creating it. Will wait for status checks to pass. |
+| **`automatic_merge_delay`** | number  | `0`     | MS to delay after creating before attempting to merge.                         |
 
 #### Pull Request Review options
 
