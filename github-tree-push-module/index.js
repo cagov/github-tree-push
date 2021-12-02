@@ -574,20 +574,22 @@ class GitHubTreePush {
   }
 
   /**
-   * Sets a single file to the tree to be syncronized - (updated or added)
+   * Sets a single file to the tree to be syncronized (updated or added).
    *
-   * @param {string} path path to use for publishing file
-   * @param {string | Buffer} value content to use
+   * @param {string} path Path to use for publishing file
+   * @param {string | Buffer} content Content to use for the file.
    */
-  syncFile(path, value) {
+  syncFile(path, content) {
     /** @type {TreeFileOperationSync} */
-    let sync = { sha: gitHubBlobPredictSha(value) };
+    let sync = { sha: gitHubBlobPredictSha(content) };
 
-    if (Buffer.isBuffer(value)) {
-      sync.buffer = value;
+    if (Buffer.isBuffer(content)) {
+      sync.buffer = content;
     } else {
       sync.content =
-        typeof value === "string" ? value : JSON.stringify(value, null, 2);
+        typeof content === "string"
+          ? content
+          : JSON.stringify(content, null, 2);
     }
 
     this.__treeOperations.set(path, { sync });
@@ -605,7 +607,7 @@ class GitHubTreePush {
   /**
    * Sets a file to removed.
    *
-   * @param {string} path path of file to be removed.
+   * @param {string} path Path of file to be removed.
    */
   removeFile(path) {
     this.__treeOperations.set(path, { remove: true });

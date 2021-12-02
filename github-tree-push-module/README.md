@@ -34,40 +34,26 @@ const token = process.env["GITHUB_TOKEN"]; //Keep your GitHub token safe
 
 ### Setting up a tree
 
-Declare your GitHub target (`owner`/`repo`/`base`/`path`) in each tree instance you create.
+Declare your GitHub target (`owner`/`repo`/`base`/`path`) in each tree instance you create. Detailed options [Below](#treepush-options).
 
 ```js
 let tree1 = new treePush(token, {
-  owner: "cagov",
-  repo: "my-github-target",
-  base: "github-tree-push-branch",
-  path: "github-tree-push-path"
+  owner: "my-github-owner",
+  repo: "my-github-repository",
+  base: "my-github-branch",
+  path: "my-path-inside-repository"
 });
 ```
 
 ### Adding files to a tree
 
-Fill your tree with file names and data.
+Fill your tree with file names and data. No data is transmitted until you push the tree with `treePush`.
 
 ```js
-rootTree.addFile("Root File.txt", "Root File Data"); //Strings
+tree1.syncFile("Root File.txt", "Root File Data"); //Strings
 let binaryData = Buffer.from("My Buffer Text 1");
-rootTree.addFile("Root Buffer.txt", binaryData); //Or binary Data
-rootTree.addFile("Folder Level 1/Folder Level 2/fileAB1.txt", "Path File Data"); //Paths
-```
-
-### Adding files to a tree using a Map object
-
-You can set up a Map object with your files if that would be easier.
-
-```js
-/** @type {Map<string,*>} */
-let fileMap = new Map();
-
-fileMap.set("fileA.txt", "File A Content"); //Strings
-fileMap.set("fileB.txt", Buffer.from("File B Content")); //Or binary Data
-
-tree1.addFileMap(fileMap);
+tree1.syncFile("Root Buffer.txt", binaryData); //Or binary Data
+tree1.syncFile("Parent Folder/Nester Folder/fileAB1.txt", "Path File Data"); //Paths
 ```
 
 ### Sending the content to GitHub
@@ -75,9 +61,9 @@ tree1.addFileMap(fileMap);
 One method performs the work once the tree is set up.
 
 ```js
-await rootTree.treePush();
+await tree1.treePush();
 //See the results
-console.log(JSON.stringify(rootTree.lastRunStats, null, 2));
+console.log(JSON.stringify(tree1.lastRunStats, null, 2));
 ```
 
 ### Alternate tree setup for Pull Requests
@@ -110,9 +96,48 @@ let tree1 = new treePush(token, {
 });
 ```
 
-### treePush options
+## Object Methods
 
-| Name                       | Type    | Description                                                                                        |
+These are the most commonly used methods.
+
+### `syncFile(path, content)`
+
+Sets a single file to the tree to be syncronized (updated or added).
+
+#### `syncFile` Parameters
+
+| Parameter Name | Type             | Description                                    |
+| :------------- | :--------------- | :--------------------------------------------- |
+| **`path`**     | string           | **Required.** Path to use for publishing file. |
+| **`content`**  | string \| Buffer | **Required.** Content to use for the file.     |
+
+### `removeFile(path)`
+
+Sets a file to removed.
+
+#### `removeFile` Parameters
+
+| Parameter Name | Type   | Description                               |
+| :------------- | :----- | :---------------------------------------- |
+| **`path`**     | string | **Required.** Path of file to be removed. |
+
+### `doNotRemoveFile(path)`
+
+Sets a file to NOT be removed when `removeOtherFiles:true`.
+
+#### `doNotRemoveFile` Parameters
+
+| Parameter Name | Type   | Description                                 |
+| :------------- | :----- | :------------------------------------------ |
+| **`path`**     | string | **Required.** Path of file to be preserved. |
+
+### `treePush()`
+
+Push all the files added to the tree to the repository.
+
+#### `treePush` options
+
+| Property Name              | Type    | Description                                                                                        |
 | :------------------------- | :------ | :------------------------------------------------------------------------------------------------- |
 | **`owner`**                | string  | **Required.** GitHub _owner_ path.                                                                 |
 | **`repo`**                 | string  | **Required.** GitHub _repo_ path.                                                                  |
@@ -125,11 +150,11 @@ let tree1 = new treePush(token, {
 | **`pull_request`**         | boolean | `true` to use a Pull Request.                                                                      |
 | **`pull_request_options`** | object  | Options if using a Pull Request. See [Below](#pull-request-options).                               |
 
-### Pull Request options
+#### Pull Request options
 
 Options orginating from [GitHub Pull Request Docs](https://docs.github.com/en/rest/reference/pulls#create-a-pull-request).
 
-| Name                        | Type    | Description                                                                    |
+| Property Name               | Type    | Description                                                                    |
 | :-------------------------- | :------ | :----------------------------------------------------------------------------- |
 | **`title`**                 | string  | The title of the new pull request. (Leave `issue` blank if you use this)       |
 | **`issue`**                 | number  | Issue number this pull request replaces (Leave `title` blank if you use this)  |
@@ -141,21 +166,21 @@ Options orginating from [GitHub Pull Request Docs](https://docs.github.com/en/re
 | **`automatic_merge`**       | boolean | `true` to merge the PR after creating it. Will wait for status checks to pass. |
 | **`automatic_merge_delay`** | number  | MS to delay after creating before attempting to merge.                         |
 
-### Pull Request Review options
+#### Pull Request Review options
 
 Options originating from [GitHub Review Request Docs](https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request).
 
-| Name            | Type     | Description                                           |
+| Property Name   | Type     | Description                                           |
 | :-------------- | :------- | :---------------------------------------------------- |
 | **`milestone`** | number   | The number for the milestone to associate this issue. |
 | **`labels`**    | string[] | Issue labels to apply to the Pull Request.            |
 | **`assignees`** | string[] | Logins for users to assign to this issue.             |
 
-### Pull Request Issue options
+#### Pull Request Issue options
 
 Options originating from [GitHub Issue Docs](https://docs.github.com/en/rest/reference/issues#update-an-issue).
 
-| Name                 | Type     | Description                                     |
+| Property Name        | Type     | Description                                     |
 | :------------------- | :------- | :---------------------------------------------- |
 | **`reviewers`**      | string[] | An array of user logins that will be requested. |
 | **`team_reviewers`** | string[] | An array of team slugs that will be requested.  |
