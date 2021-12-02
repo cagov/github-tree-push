@@ -62,6 +62,13 @@ One method performs the work once the tree is set up.
 
 ```js
 await tree1.treePush();
+```
+
+### Getting info on the last push
+
+You can get information about the last push operation using `lastRunStats`. Details [Below](#lastRunStats-output).
+
+```js
 //See the results
 console.log(JSON.stringify(tree1.lastRunStats, null, 2));
 ```
@@ -184,6 +191,25 @@ Options originating from [GitHub Issue Docs](https://docs.github.com/en/rest/ref
 | :------------------- | :------- | :---------------------------------------------- |
 | **`reviewers`**      | string[] | An array of user logins that will be requested. |
 | **`team_reviewers`** | string[] | An array of team slugs that will be requested.  |
+
+## `lastRunStats` Output
+
+When looking at the last run, the following data is available.
+
+| Property Name                       | Type   | Description                                                               |
+| :---------------------------------- | :----- | :------------------------------------------------------------------------ |
+| **`Name`**                          | string | Identifies this stat report.                                              |
+| **`Tree_Operations`**               | number | Number of CRUD operations in the new tree.                                |
+| **`Content_Converted_To_Blobs`**    | number | Text content that will be uploaded separately (because of dupes or size). |
+| **`Blobs_Uploaded`**                | number | Number of blobs uploaded to GitHub just now.                              |
+| **`Text_Content_Uploaded`**         | number | Number of text content strings that were uploaded together in the tree.   |
+| **`Target_Tree_Size`**              | number | The original tree size.                                                   |
+| **`Files_Deleted`**                 | number | Files deleted from GitHub in this tree.                                   |
+| **`Files_Referenced`**              | number | Files where a SHA reference to a blob was added/moved.                    |
+| **`Commit_URL`**                    | string | The GitHub URL for the commit details.                                    |
+| **`Pull_Request_URL`**              | string | The GitHub URL for the pull request details.                              |
+| **`GitHub_Rate_Limit_Remaining`**   | number | How many more requests are allowed this hour.                             |
+| **`GitHub_Rate_Limit_Retry_After`** | number | How long to wait before trying again.                                     |
 
 ## Trees explained
 

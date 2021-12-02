@@ -123,18 +123,18 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * @typedef {object} TreeFileRunStats
- * @property {string} Name Identifies this stat report
- * @property {number} [Tree_Operations] Number of CRUD operations in the new tree
- * @property {number} [Content_Converted_To_Blobs] Text content that will be uploaded separately (because of dupes or size)
- * @property {number} [Blobs_Uploaded] Number of blobs uploaded to GitHub just now
- * @property {number} [Text_Content_Uploaded] Number of text content strings that were uploaded together in the tree
- * @property {number} [Target_Tree_Size] The original tree size
- * @property {number} [Files_Deleted] Files deleted from GitHub in this tree
- * @property {number} [Files_Referenced] Files where a sha reference to a blob was added/moved
- * @property {string} [Commit_URL] The GitHub URL for the commit details
- * @property {string} [Pull_Request_URL] The GitHub URL for the pull request details
- * @property {number} [GitHub_Rate_Limit_Remaining] How many more requests are allowed this hour
- * @property {number} [GitHub_Rate_Limit_Retry_After] How long to wait before trying again
+ * @property {string} Name Identifies this stat report.
+ * @property {number} [Tree_Operations] Number of CRUD operations in the new tree.
+ * @property {number} [Content_Converted_To_Blobs] Text content that will be uploaded separately (because of dupes or size).
+ * @property {number} [Blobs_Uploaded] Number of blobs uploaded to GitHub just now.
+ * @property {number} [Text_Content_Uploaded] Number of text content strings that were uploaded together in the tree.
+ * @property {number} [Target_Tree_Size] The original tree size.
+ * @property {number} [Files_Deleted] Files deleted from GitHub in this tree.
+ * @property {number} [Files_Referenced] Files where a SHA reference to a blob was added/moved.
+ * @property {string} [Commit_URL] The GitHub URL for the commit details.
+ * @property {string} [Pull_Request_URL] The GitHub URL for the pull request details.
+ * @property {number} [GitHub_Rate_Limit_Remaining] How many more requests are allowed this hour.
+ * @property {number} [GitHub_Rate_Limit_Retry_After] How long to wait before trying again.
  */
 
 /**
