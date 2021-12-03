@@ -590,19 +590,21 @@ class GitHubTreePush {
    * Sets a single file to the tree to be syncronized (updated or added).
    *
    * @param {string} path Path to use for publishing file
-   * @param {string | Buffer} content Content to use for the file.
+   * @param {*} content Content to use for the file.
    */
   syncFile(path, content) {
     /** @type {TreeFileOperationSync} */
-    let sync = { sha: gitHubBlobPredictSha(content) };
+    let sync = { sha: "" };
 
     if (Buffer.isBuffer(content)) {
       sync.buffer = content;
+      sync.sha = gitHubBlobPredictSha(sync.buffer);
     } else {
       sync.content =
         typeof content === "string"
           ? content
           : JSON.stringify(content, null, 2);
+      sync.sha = gitHubBlobPredictSha(sync.content);
     }
 
     this.__treeOperations.set(path, { sync });
