@@ -590,7 +590,7 @@ class GitHubTreePush {
    * Sets a single file to the tree to be syncronized (updated or added).
    *
    * @param {string} path Path to use for publishing file
-   * @param {string | Buffer} content Content to use for the file.
+   * @param {*} content Content to use for the file.
    */
   syncFile(path, content) {
     /** @type {TreeFileOperationSync} */
