@@ -77,6 +77,12 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  */
 
 /**
+ * @typedef {object} GithubCompare
+ * @property {{commmit:GithubCommit}[]} commits
+ * @property {GithubCompareFile[]} files
+ */
+
+/**
  * From https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request
  *
  * @typedef {object} TreePushCommitPullRequestReviewOptions
@@ -181,6 +187,13 @@ class GitHubTreePush {
      * @type {TreeFileRunStats}
      */
     this.lastRunStats = { Name: "Not run" };
+
+    /**
+     * The last commit compare where there was a change
+     *
+     * @type {GithubCompare | undefined}
+     */
+    this.lastCompare = undefined;
 
     /**
      * The last json object returned from the most recent fetch
@@ -565,7 +578,7 @@ class GitHubTreePush {
 
     //https://docs.github.com/en/rest/reference/repos#compare-two-commits
     //Compare the proposed commit with the trunk (master) branch
-    /** @type {{commits:{commmit:GithubCommit}[],files:GithubCompareFile[]}} */
+    /** @type {GithubCompare} */
     const compare = await this.__getSomeJson(
       `/compare/${baseSha}...${commitSha}`
     );
@@ -808,6 +821,7 @@ class GitHubTreePush {
 
       if (compare?.files.length) {
         //Changes to apply
+        this.lastCompare = compare;
 
         if (this.options.pull_request) {
           //Pull Request Mode
