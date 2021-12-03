@@ -37,7 +37,7 @@ See [Trees explained](#trees-explained) to find out how this module uses trees.
 ### Prerequisites
 
 ```js
-const treePush = require("@cagov/github-tree-push"); //treePush Class
+const { GitHubTreePush } = require("@cagov/github-tree-push"); //treePush Class
 const token = process.env["GITHUB_TOKEN"]; //Keep your GitHub token safe
 ```
 
@@ -46,7 +46,7 @@ const token = process.env["GITHUB_TOKEN"]; //Keep your GitHub token safe
 Declare your GitHub target (`owner`/`repo`/`base`/`path`) in each tree instance you create. Find detailed options in [treePush options](#treepush-options).
 
 ```js
-let tree1 = new treePush(token, {
+let tree1 = new GitHubTreePush(token, {
   owner: "my-github-owner",
   repo: "my-github-repository",
   base: "my-github-branch",
@@ -86,7 +86,7 @@ console.log(JSON.stringify(tree1.lastRunStats, null, 2));
 There are many options for sending your content as a Pull Request. Find detailed options in [Pull request options](#pull-request-options).
 
 ```js
-let tree1 = new treePush(token, {
+let tree1 = new GitHubTreePush(token, {
   owner: "cagov",
   repo: "my-github-target",
   base: "github-tree-push-branch",
