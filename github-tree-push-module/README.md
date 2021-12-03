@@ -1,31 +1,40 @@
 # GitHub Tree Push
 
-A module for pushing content to GitHub, be it complicated folder structure updates, or just a single file.
+A module for pushing content to GitHub. You can use it for complicated folder structure updates or just a single file.
 
 ## Features
 
-- Multiple file updates can be combined into a single commit.
-- GitHub compatible file hashing reduces the I/O required to push content.
-- Implicit file renaming.
-- Multi-threaded file uploads.
-- Pull Requests can created from the commit.
-- Pull Request auto-approval that waits for checks to finish before approving.
-- Add labels/assignees/reviewers to Pull Requests.
-- Auto retry for common connection errors.
-- Fully authenticated and conditional requests conserves rate-limit.
-- Huge tree support splits large trees while still maintaining a single commit.
+- Multiple file updates can be combined into a single commit
+- GitHub compatible file hashing reduces the I/O required to push content
+- Implicit file renaming
+- Multi-threaded file uploads
+- Pull requests can created from the commit
+- Pull request auto-approval that waits for checks to finish before approving
+- Add labels/assignees/reviewers to pull requests
+- Auto retry for common connection errors
+- Fully authenticated and conditional requests conserves rate-limit
+- Huge tree support splits large trees while still maintaining a single commit
 
 ## Why use this?
 
-Most users of GitHub's API use separate file requests to push their content to GitHub, expecting GitHub to handle all the file compare work. That's fine for small, infrequent updates, but it can be really slow if you are updating more complex collections of files. Additionally, sending separate files in separate commits can create conflicts as the files aren't updated transactionally.
+Most people who use GitHub's API use separate file requests to push their content to GitHub. They expect GitHub to handle all the file compare work. That's fine for small, infrequent updates.
 
-Placing multiple file operations in single commit manages changes better; renames are handled properly, conflicts are prevented, duplicate files are connected, updates are transactional, connection overhead is reduced.
+But it can be slow if you're updating more complex collections of files. Sending separate files in separate commits can create conflicts as the files are not updated transactionally.
 
-See [Below](#trees-explained) for an explanation of how this module uses trees.
+Placing multiple file operations in single commit:
+
+- Manages changes better
+- Handles renames properly
+- Prevents conflicts
+- Connects duplicate files
+- Makes updates transactional
+- Reduces connection overhead
+
+See [Trees explained](#trees-explained) to find out how this module uses trees.
 
 ## Sample Usage
 
-### Pre-requisites
+### Prerequisites
 
 ```js
 const treePush = require("@cagov/github-tree-push"); //treePush Class
@@ -34,7 +43,7 @@ const token = process.env["GITHUB_TOKEN"]; //Keep your GitHub token safe
 
 ### Setting up a tree
 
-Declare your GitHub target (`owner`/`repo`/`base`/`path`) in each tree instance you create. Detailed options [Below].(#treepush-options).
+Declare your GitHub target (`owner`/`repo`/`base`/`path`) in each tree instance you create. Find detailed options in [treePush options](#treepush-options).
 
 ```js
 let tree1 = new treePush(token, {
@@ -47,7 +56,7 @@ let tree1 = new treePush(token, {
 
 ### Adding files to a tree
 
-Fill your tree with file names and data. No data is transmitted until you push the tree with `treePush`.
+Fill your tree with file names and data. Data is not transmitted until you push the tree with `treePush`.
 
 ```js
 tree1.syncFile("Root File.txt", "Root File Data"); //Strings
@@ -66,15 +75,15 @@ await tree1.treePush();
 
 ### Getting info on the last push
 
-You can get information about the last push operation using `lastRunStats`. Details [Below](#lastRunStats-output).
+You can get information about the last push operation using `lastRunStats`. Find details in [lastRunStats Output](#lastRunStats-output).
 
 ```js
 console.log(JSON.stringify(tree1.lastRunStats, null, 2));
 ```
 
-### Alternate tree setup for Pull Requests
+### Alternate tree setup for pull requests
 
-There are many options for sending your content as a Pull Request. Detailed options [Below](#pull-request-options).
+There are many options for sending your content as a Pull Request. Find detailed options in [Pull request options](#pull-request-options).
 
 ```js
 let tree1 = new treePush(token, {
@@ -102,7 +111,7 @@ let tree1 = new treePush(token, {
 });
 ```
 
-## Object Methods
+## Object methods
 
 These are the most commonly used methods.
 
@@ -110,7 +119,7 @@ These are the most commonly used methods.
 
 Sets a single file to the tree to be syncronized (updated or added).
 
-#### `syncFile` Parameters
+#### `syncFile` parameters
 
 | Parameter Name | Type             | Description                                    |
 | :------------- | :--------------- | :--------------------------------------------- |
@@ -119,7 +128,7 @@ Sets a single file to the tree to be syncronized (updated or added).
 
 ### `removeFile(path)`
 
-Sets a file to removed.
+Sets a file to be removed.
 
 #### `removeFile` Parameters
 
@@ -129,9 +138,9 @@ Sets a file to removed.
 
 ### `doNotRemoveFile(path)`
 
-Sets a file to NOT be removed when `removeOtherFiles:true`.
+Sets a file to **not** be removed when `removeOtherFiles:true`.
 
-#### `doNotRemoveFile` Parameters
+#### `doNotRemoveFile` parameters
 
 | Parameter Name | Type   | Description                                 |
 | :------------- | :----- | :------------------------------------------ |
@@ -149,66 +158,66 @@ Push all the files added to the tree to the repository.
 | **`repo`**                 | string  |                       | **Required.** GitHub _repo_ path.                                                       |
 | **`base`**                 | string  |                       | **Required.** The name of the base branch that the head will be merged into (main/etc). |
 | **`path`**                 | string  | `/`                   | Starting path in the repo for changes to start from.                                    |
-| **`deleteOtherFiles`**     | boolean | `false`               | `true` to delete other files in the path when pushing.                                  |
-| **`recursive`**            | boolean | `true`                | `true` to compare sub-folders too.                                                      |
+| **`deleteOtherFiles`**     | boolean | `false`               | Set as `true` to delete other files in the path when pushing.                           |
+| **`recursive`**            | boolean | `true`                | Set as `true` to compare sub-folders too.                                               |
 | **`contentToBlobBytes`**   | number  | `50000`               | Content bytes allowed in content tree before turning it into a separate blob upload.    |
-| **`commit_message`**       | string  | `"No commit message"` | Name to identify the Commit.                                                            |
-| **`pull_request`**         | boolean | `false`               | `true` to use a Pull Request.                                                           |
-| **`pull_request_options`** | object  | `{}`                  | Options if using a Pull Request. See [Below](#pull-request-options).                    |
+| **`commit_message`**       | string  | `"No commit message"` | Name to identify the commit.                                                            |
+| **`pull_request`**         | boolean | `false`               | Set as `true` to use a pull request.                                                    |
+| **`pull_request_options`** | object  | `{}`                  | Options if using a pull request. See [pull request options](#pull-request-options).     |
 
-#### Pull Request options
+#### Pull request options
 
-Options orginating from [GitHub Pull Request Docs](https://docs.github.com/en/rest/reference/pulls#create-a-pull-request).
+Options based on [GitHub pull request docs](https://docs.github.com/en/rest/reference/pulls#create-a-pull-request).
 
-| Property Name               | Type    | Default | Description                                                                    |
-| :-------------------------- | :------ | :------ | :----------------------------------------------------------------------------- |
-| **`title`**                 | string  |         | The title of the new pull request. (Leave `issue` blank if you use this)       |
-| **`issue`**                 | number  |         | Issue number this pull request replaces (Leave `title` blank if you use this)  |
-| **`body`**                  | string  |         | The contents describing the pull request.                                      |
-| **`maintainer_can_modify`** | boolean | `false` | Indicates whether maintainers can modify the pull request.                     |
-| **`draft`**                 | boolean | `false` | Indicates whether the pull request is a draft.                                 |
-| **`review_options`**        | object  | `{}`    | Options for reviewers. See [Below](#pull-request-review-options).              |
-| **`issue_options`**         | object  | `{}`    | Options for issue. See [Below](#pull-request-issue-options).                   |
-| **`automatic_merge`**       | boolean | `false` | `true` to merge the PR after creating it. Will wait for status checks to pass. |
-| **`automatic_merge_delay`** | number  | `0`     | MS to delay after creating before attempting to merge.                         |
+| Property Name               | Type    | Default | Description                                                                                     |
+| :-------------------------- | :------ | :------ | :---------------------------------------------------------------------------------------------- |
+| **`title`**                 | string  |         | The title of the new pull request. (Leave `issue` blank if you use this.)                       |
+| **`issue`**                 | number  |         | Issue number this pull request replaces (Leave `title` blank if you use this.)                  |
+| **`body`**                  | string  |         | The contents describing the pull request.                                                       |
+| **`maintainer_can_modify`** | boolean | `false` | Sets whether maintainers can modify the pull request.                                           |
+| **`draft`**                 | boolean | `false` | Sets whether the pull request is a draft.                                                       |
+| **`review_options`**        | object  | `{}`    | Options for [pull request reviews](#pull-request-review-options).                               |
+| **`issue_options`**         | object  | `{}`    | Options for [pull request issue](#pull-request-issue-options).                                  |
+| **`automatic_merge`**       | boolean | `false` | Set as `true` to merge the pull request after creating it. Will wait for status checks to pass. |
+| **`automatic_merge_delay`** | number  | `0`     | MS to delay after creating before attempting to merge.                                          |
 
-#### Pull Request Review options
+#### Pull request review options
 
-Options originating from [GitHub Review Request Docs](https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request).
+Options based on [GitHub review request docs](https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request).
 
 | Property Name   | Type     | Description                                           |
 | :-------------- | :------- | :---------------------------------------------------- |
 | **`milestone`** | number   | The number for the milestone to associate this issue. |
-| **`labels`**    | string[] | Issue labels to apply to the Pull Request.            |
+| **`labels`**    | string[] | Issue labels to apply to the pull request.            |
 | **`assignees`** | string[] | Logins for users to assign to this issue.             |
 
-#### Pull Request Issue options
+#### Pull request issue options
 
-Options originating from [GitHub Issue Docs](https://docs.github.com/en/rest/reference/issues#update-an-issue).
+Options based on [GitHub issue docs](https://docs.github.com/en/rest/reference/issues#update-an-issue).
 
-| Property Name        | Type     | Description                                     |
-| :------------------- | :------- | :---------------------------------------------- |
-| **`reviewers`**      | string[] | An array of user logins that will be requested. |
-| **`team_reviewers`** | string[] | An array of team slugs that will be requested.  |
+| Property Name        | Type     | Description                       |
+| :------------------- | :------- | :-------------------------------- |
+| **`reviewers`**      | string[] | Requests an array of user logins. |
+| **`team_reviewers`** | string[] | Requests an array of team slugs.  |
 
-## `lastRunStats` Output
+## `lastRunStats` output
 
-When looking at the last run, the following data is available.
+When looking at the last run, the following data is available:
 
-| Property Name                       | Type   | Description                                                               |
-| :---------------------------------- | :----- | :------------------------------------------------------------------------ |
-| **`Name`**                          | string | Identifies this stat report.                                              |
-| **`Tree_Operations`**               | number | Number of CRUD operations in the new tree.                                |
-| **`Content_Converted_To_Blobs`**    | number | Text content that will be uploaded separately (because of dupes or size). |
-| **`Blobs_Uploaded`**                | number | Number of blobs uploaded to GitHub just now.                              |
-| **`Text_Content_Uploaded`**         | number | Number of text content strings that were uploaded together in the tree.   |
-| **`Target_Tree_Size`**              | number | The original tree size.                                                   |
-| **`Files_Deleted`**                 | number | Files deleted from GitHub in this tree.                                   |
-| **`Files_Referenced`**              | number | Files where a SHA reference to a blob was added/moved.                    |
-| **`Commit_URL`**                    | string | The GitHub URL for the commit details.                                    |
-| **`Pull_Request_URL`**              | string | The GitHub URL for the pull request details.                              |
-| **`GitHub_Rate_Limit_Remaining`**   | number | How many more requests are allowed this hour.                             |
-| **`GitHub_Rate_Limit_Retry_After`** | number | How long to wait before trying again.                                     |
+| Property Name                       | Type   | Description                                                                    |
+| :---------------------------------- | :----- | :----------------------------------------------------------------------------- |
+| **`Name`**                          | string | Identifies this stat report.                                                   |
+| **`Tree_Operations`**               | number | Number of CRUD operations in the new tree.                                     |
+| **`Content_Converted_To_Blobs`**    | number | Text content that will be uploaded separately (because of duplicates or size). |
+| **`Blobs_Uploaded`**                | number | Number of blobs uploaded to GitHub just now.                                   |
+| **`Text_Content_Uploaded`**         | number | Number of text content strings that were uploaded together in the tree.        |
+| **`Target_Tree_Size`**              | number | The original tree size.                                                        |
+| **`Files_Deleted`**                 | number | Files deleted from GitHub in this tree.                                        |
+| **`Files_Referenced`**              | number | Files where a SHA reference to a blob was added/moved.                         |
+| **`Commit_URL`**                    | string | The GitHub URL for the commit details.                                         |
+| **`Pull_Request_URL`**              | string | The GitHub URL for the pull request details.                                   |
+| **`GitHub_Rate_Limit_Remaining`**   | number | How many more requests are allowed this hour.                                  |
+| **`GitHub_Rate_Limit_Retry_After`** | number | How long to wait before trying again.                                          |
 
 ## Trees explained
 
@@ -216,7 +225,7 @@ Trees are an excellent way to communicate changes with GitHub.
 
 ### What does a tree look like?
 
-A tree with 2 file updates would look similiar to this.
+A tree with 2 file updates would look like this.
 
 ```js
 {
@@ -233,11 +242,11 @@ A tree with 2 file updates would look similiar to this.
 }
 ```
 
-Both updates would be included in the commit together.
+The commit includes both updates.
 
-### How renames are supported
+### How renames work
 
-To rename a file, you delete the old name and add the new name in the same tree. As long as these operations are in the same tree, GitHub will notice this and consider it a rename. This module will keep track of the hashes so that the content doesn't have to be transmitted again if it is the same.
+To rename a file, delete the old name and add the new name in the same tree. As long as these operations are in the same tree, GitHub will notice this and consider it a rename. This module keeps track of the hashes so you do not have to send them again if they are the same.
 
 This example renames `original file name.txt` to `new file name.txt`.
 
@@ -258,9 +267,9 @@ This example renames `original file name.txt` to `new file name.txt`.
 
 "`sha: null`" lets GitHub know to remove the old file, combined with the original `sha` added to the new location, it will be treated as a rename.
 
-### How large file updates are supported
+### Support for large file updates
 
-Binary files, large content and duplicate files are handled by uploading new content multi-threaded, and then placing their unique hashes in the tree (`sha`) instead of the `content`. GitHub stores these "blobs" in the repository disconnected from the folder structure, until a tree update that references the hash of the blob is submitted. Large files will therefore be committed to the repo transactionally, without conflicts. If a problem occurs in the update, each blob is still stored disconnected waiting for a tree to reference it, and doesn't have to be uploaded again.
+Binary files, large content, and duplicate files are uploaded as new content multi-threaded. Place their unique hashes in the tree (`sha`) instead of the `content`. GitHub stores these "blobs" in the repository disconnected from the folder structure. Submit a tree update that references the hash of the blob to upload the blob. This means large files get committed to the repo transactionally, without conflicts. If a problem occurs in the update, each blob is still stored disconnected waiting for a tree to reference it. You do not have uploaded it again.
 
 Here is a simple tree update that associates already uploaded blobs with files in the commit.
 
@@ -279,7 +288,7 @@ Here is a simple tree update that associates already uploaded blobs with files i
 }
 ```
 
-Since the heavy file work, transferring the binary files in separate threads, was done before the tree was submitted, the actual tree is very small to transmit.
+The tree is very small to transmit. This is because the heavy file work (transferring the binary files in separate threads) happened before the tree was submitted.
 
 Project locations
 
