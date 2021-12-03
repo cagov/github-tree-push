@@ -594,15 +594,17 @@ class GitHubTreePush {
    */
   syncFile(path, content) {
     /** @type {TreeFileOperationSync} */
-    let sync = { sha: gitHubBlobPredictSha(content) };
+    let sync = { sha: "" };
 
     if (Buffer.isBuffer(content)) {
       sync.buffer = content;
+      sync.sha = gitHubBlobPredictSha(sync.buffer);
     } else {
       sync.content =
         typeof content === "string"
           ? content
           : JSON.stringify(content, null, 2);
+      sync.sha = gitHubBlobPredictSha(sync.content);
     }
 
     this.__treeOperations.set(path, { sync });
