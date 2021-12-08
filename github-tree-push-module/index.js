@@ -405,18 +405,6 @@ class GitHubTreePush {
         }
       });
 
-    //convert any binary operations for known files into sha sync;
-    this.__treeOperations.forEach(op => {
-      if (op.sync) {
-        if (op.sync.buffer || op.sync.content) {
-          if (this.__knownBlobShas.has(op.sync.sha)) {
-            delete op.sync.buffer;
-            delete op.sync.content;
-          }
-        }
-      }
-    });
-
     return referenceTree;
   }
 
