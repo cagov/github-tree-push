@@ -23,7 +23,7 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
 
   const suffix = "2"; //new Date().toString();
 
-  tree1.syncFile("A/A/fileAA1.txt", `A${suffix}`);
+  tree1.syncFile("A/A/fileAA1.txt", `B${suffix}`);
   tree1.syncFile("A/A/fileAA2.txt", `B${suffix}`);
   tree1.syncFile("A/B/fileAB1.txt", `C${suffix}`);
   tree1.syncFile("A/B/fileAB2.txt", `D${suffix}`);
@@ -36,6 +36,8 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
     "Special Path옹엄얼언웅워원월/Special File옹엄얼언웅워원월.txt",
     "some data 옹엄얼언웅워원월"
   );
+
+  await tree1.treePushDryRun();
 
   await tree1.treePush();
 

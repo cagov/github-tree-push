@@ -798,6 +798,23 @@ class GitHubTreePush {
   }
 
   /**
+   * Returns a list of paths that will be changed if this is run
+   */
+  async treePushDryRun() {
+    this.lastRunStats = {
+      Name: `treePushDryRun - ${
+        this.options.commit_message || "(No commit message)"
+      }`
+    };
+
+    const referenceTree = await this.__readTree();
+
+    const updatetree = this.__deltaTree(referenceTree);
+
+    return updatetree.map(x => x.path);
+  }
+
+  /**
    * Push all the files added to the tree to the repository
    */
   async treePush() {
