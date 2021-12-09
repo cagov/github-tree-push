@@ -217,7 +217,7 @@ class GitHubTreePush {
     this.__token = () => token;
 
     /**
-     * @type {Promise<void>[]}
+     * @type {{path:string,url:string}[]}
      */
     this.__downloads = [];
 
@@ -654,20 +654,7 @@ class GitHubTreePush {
    * @param {string} url url for the object to download
    */
   syncDownload(path, url) {
-    this.__downloads.push(this.__syncdownloadGetPromise(path, url));
-  }
-
-  /**
-   *
-   * @param {string} path
-   * @param {string} url
-   */
-  async __syncdownloadGetPromise(path, url) {
-    console.log(`Downloading... ${url}`);
-    const fetchResponse = await fetch(url);
-    const blob = await fetchResponse.arrayBuffer();
-    const buffer = Buffer.from(blob);
-    this.syncFile(path, buffer);
+    this.__downloads.push({ path, url });
   }
 
   /**
@@ -840,6 +827,42 @@ class GitHubTreePush {
   }
 
   /**
+   * async download of any requested urls
+   */
+  async __getDownloads() {
+    if (this.__downloads.length) {
+      /** @type {Map<string,Buffer>} */
+      const downloadResults = new Map();
+
+      const urls = [...new Set(this.__downloads.map(dl => dl.url))];
+
+      console.log(`Downloading ${urls.length} file(s)...\n${urls.join("\n")}`);
+
+      /**
+       * @param {string} url
+       */
+      const __syncdownloadGetPromise = async url =>
+        fetch(url)
+          .then(fetchResponse => fetchResponse.arrayBuffer())
+          .then(blob => {
+            const buffer = Buffer.from(blob);
+            downloadResults.set(url, buffer);
+          });
+
+      /** @type {Promise<void>[]} */
+      const promises = urls.map(url => __syncdownloadGetPromise(url));
+
+      await Promise.all(promises);
+
+      console.log(`All downloads complete.`);
+
+      this.__downloads.forEach(dl => {
+        this.syncFile(dl.path, downloadResults.get(dl.url));
+      });
+    }
+  }
+
+  /**
    * Returns a list of paths that will be changed if this is run
    */
   async treePushDryRun() {
@@ -864,9 +887,7 @@ class GitHubTreePush {
       Name: `treePush - ${this.options.commit_message || "(No commit message)"}`
     };
 
-    if (this.__downloads.length) {
-      await Promise.all(this.__downloads);
-    }
+    await this.__getDownloads();
 
     const referenceTree = await this.__readTree();
 
