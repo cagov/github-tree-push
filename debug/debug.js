@@ -37,7 +37,7 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
     "some data 옹엄얼언웅워원월"
   );
 
-  const dryrun = await tree1.treePushDryRun();
+  await tree1.treePushDryRun();
 
   await tree1.treePush();
 

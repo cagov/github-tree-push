@@ -380,32 +380,37 @@ class GitHubTreePush {
       treeUrl = masterBranch;
     }
 
-    const recursiveOption = this.options.recursive ? "?recursive=true" : "";
+    if (treeUrl) {
+      const recursiveOption = this.options.recursive ? "?recursive=true" : "";
 
-    //https://docs.github.com/en/rest/reference/git#get-a-tree
-    //update the referenceTree to match the remote tree
+      //https://docs.github.com/en/rest/reference/git#get-a-tree
+      //update the referenceTree to match the remote tree
 
-    /** @type {{sha:string,truncated:boolean,tree:GithubTreeRow[]}}} */
-    const treeResult = await this.__getSomeJson(
-      `/git/trees/${treeUrl}${recursiveOption}`
-    );
-    if (treeResult.truncated) {
-      throw new Error("Tree is too big to compare.  Use a sub-folder.");
+      /** @type {{sha:string,truncated:boolean,tree:GithubTreeRow[]}}} */
+      const treeResult = await this.__getSomeJson(
+        `/git/trees/${treeUrl}${recursiveOption}`
+      );
+      if (treeResult.truncated) {
+        throw new Error("Tree is too big to compare.  Use a sub-folder.");
+      }
+      const referenceTree = treeResult.tree.filter(x => x.type === "blob");
+
+      this.lastRunStats.Target_Tree_Size = referenceTree.length;
+
+      //Add all the known shas to a list
+      referenceTree
+        .map(x => x.sha)
+        .forEach(x => {
+          if (x) {
+            this.__knownBlobShas.add(x);
+          }
+        });
+
+      return referenceTree;
+    } else {
+      //empty tree
+      return [];
     }
-    const referenceTree = treeResult.tree.filter(x => x.type === "blob");
-
-    this.lastRunStats.Target_Tree_Size = referenceTree.length;
-
-    //Add all the known shas to a list
-    referenceTree
-      .map(x => x.sha)
-      .forEach(x => {
-        if (x) {
-          this.__knownBlobShas.add(x);
-        }
-      });
-
-    return referenceTree;
   }
 
   /**
