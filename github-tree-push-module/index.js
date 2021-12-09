@@ -854,7 +854,7 @@ class GitHubTreePush {
 
       await Promise.all(promises);
 
-      console.log(`All downloads complete.`);
+      console.log(`${urls.length} download(s) complete.`);
 
       this.__downloads.forEach(dl => {
         this.syncFile(dl.path, downloadResults.get(dl.url));
