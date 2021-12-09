@@ -78,7 +78,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * @typedef {object} GithubCompare
- * @property {{commit:GithubCommit}[]} commits
+ * @property {GithubCommit} commit
  * @property {GithubCompareFile[]} files
  */
 
@@ -587,6 +587,15 @@ class GitHubTreePush {
     const compare = await this.__getSomeJson(
       `/compare/${baseSha}...${commitSha}`
     );
+
+    /** @type {*[]} */
+    const commitsArray = compare["commits"];
+
+    if (commitsArray.length) {
+      //pull in some common commit info
+      compare.commit = commitsArray[0];
+      compare.commit.message = compare.commit["commit"]["message"];
+    }
 
     return compare;
   }
