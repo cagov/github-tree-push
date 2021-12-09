@@ -901,13 +901,15 @@ class GitHubTreePush {
     );
 
     if (!commit) {
-      console.log("Nothing to commit.");
+      console.log(`${this.options.commit_message} - Nothing to commit.`);
     } else {
       const compare = await this.__compareCommit(commit);
 
       if (compare?.files.length) {
         //Changes to apply
         this.lastCompare = compare;
+
+        console.log(`${compare.commit.message} - ${compare.commit.html_url}`);
 
         if (this.options.pull_request) {
           //Pull Request Mode
@@ -1059,6 +1061,7 @@ class GitHubTreePush {
         }
       }
     }
+
     return this.lastRunStats;
   }
 }
