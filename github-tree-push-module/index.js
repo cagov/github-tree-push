@@ -78,7 +78,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * @typedef {object} GithubCompare
- * @property {{commmit:GithubCommit}[]} commits
+ * @property {{commit:GithubCommit}[]} commits
  * @property {GithubCompareFile[]} files
  */
 
