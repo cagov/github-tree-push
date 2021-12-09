@@ -901,7 +901,7 @@ class GitHubTreePush {
     );
 
     if (!commit) {
-      console.log(`${this.options.commit_message} - Nothing to commit.`);
+      console.log(`${this.lastRunStats.Name} - No Changes.`);
     } else {
       const compare = await this.__compareCommit(commit);
 
