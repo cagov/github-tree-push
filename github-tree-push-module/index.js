@@ -573,6 +573,7 @@ class GitHubTreePush {
    * Creates a GitHub compare
    *
    * @param {GithubCommit} commit
+   * @returns {Promise<GithubCompare | null>}
    */
   async __compareCommit(commit) {
     if (!commit?.parents) {
@@ -583,7 +584,6 @@ class GitHubTreePush {
 
     //https://docs.github.com/en/rest/reference/repos#compare-two-commits
     //Compare the proposed commit with the trunk (master) branch
-    /** @type {GithubCompare} */
     const compare = await this.__getSomeJson(
       `/compare/${baseSha}...${commitSha}`
     );
@@ -594,7 +594,7 @@ class GitHubTreePush {
     if (commitsArray.length) {
       //pull in some common commit info
       compare.commit = commitsArray[0];
-      compare.commit.message = compare.commit["commit"]["message"];
+      compare.commit.message = compare.commit.commit.message;
     }
 
     return compare;
