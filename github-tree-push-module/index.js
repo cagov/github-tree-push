@@ -216,6 +216,11 @@ class GitHubTreePush {
      */
     this.__token = () => token;
 
+    /**
+     * @type {Promise<void>[]}
+     */
+    this.__downloads = [];
+
     this.options.recursive = this.options.recursive ?? true; //default to true
 
     this.options.contentToBlobBytes =
@@ -589,7 +594,7 @@ class GitHubTreePush {
     );
 
     /** @type {*[]} */
-    const commitsArray = compare["commits"];
+    const commitsArray = compare.commits;
 
     if (commitsArray.length) {
       //pull in some common commit info
@@ -640,6 +645,29 @@ class GitHubTreePush {
    */
   removeFile(path) {
     this.__treeOperations.set(path, { remove: true });
+  }
+
+  /**
+   * Adds a download URL to be obtained asyronously before the push happens
+   *
+   * @param {string} path Path to use for publishing file
+   * @param {string} url url for the object to download
+   */
+  syncDownload(path, url) {
+    this.__downloads.push(this.__syncdownloadGetPromise(path, url));
+  }
+
+  /**
+   *
+   * @param {string} path
+   * @param {string} url
+   */
+  async __syncdownloadGetPromise(path, url) {
+    console.log(`Downloading... ${url}`);
+    const fetchResponse = await fetch(url);
+    const blob = await fetchResponse.arrayBuffer();
+    const buffer = Buffer.from(blob);
+    this.syncFile(path, buffer);
   }
 
   /**
@@ -835,6 +863,10 @@ class GitHubTreePush {
     this.lastRunStats = {
       Name: `treePush - ${this.options.commit_message || "(No commit message)"}`
     };
+
+    if (this.__downloads.length) {
+      await Promise.all(this.__downloads);
+    }
 
     const referenceTree = await this.__readTree();
 
