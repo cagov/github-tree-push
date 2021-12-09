@@ -831,28 +831,29 @@ class GitHubTreePush {
    */
   async __getDownloads() {
     if (this.__downloads.length) {
-      /** @type {Map<string,Buffer>} */
-      const downloadResults = new Map();
-
       const urls = [...new Set(this.__downloads.map(dl => dl.url))];
 
       console.log(`Downloading ${urls.length} file(s)...\n${urls.join("\n")}`);
 
-      /**
-       * @param {string} url
-       */
-      const __syncdownloadGetPromise = async url =>
+      const promises = urls.map(async url =>
         fetch(url)
-          .then(fetchResponse => fetchResponse.arrayBuffer())
-          .then(blob => {
-            const buffer = Buffer.from(blob);
-            downloadResults.set(url, buffer);
-          });
+          .then(fetchResponse => {
+            if (fetchResponse.ok) {
+              return fetchResponse.arrayBuffer();
+            } else {
+              throw new Error(
+                `${fetchResponse.status} - ${fetchResponse.statusText} - ${fetchResponse.url}`
+              );
+            }
+          })
+          .then(blob => ({ url, buffer: Buffer.from(blob) }))
+      );
 
-      /** @type {Promise<void>[]} */
-      const promises = urls.map(url => __syncdownloadGetPromise(url));
-
-      await Promise.all(promises);
+      /** @type {Map<string,Buffer>} */
+      const downloadResults = new Map();
+      (await Promise.all(promises)).forEach(promise =>
+        downloadResults.set(promise.url, promise.buffer)
+      );
 
       console.log(`${urls.length} download(s) complete.`);
 
