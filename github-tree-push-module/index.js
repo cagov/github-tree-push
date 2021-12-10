@@ -648,10 +648,10 @@ class GitHubTreePush {
   }
 
   /**
-   * Adds a download URL to be obtained asyronously before the push happens
+   * Adds a content URL to be downloaded asyronously before the push happens.
    *
    * @param {string} path Path to use for publishing file
-   * @param {string} url url for the object to download
+   * @param {string} url URL for the content to download.
    */
   syncDownload(path, url) {
     this.__downloads.push({ path, url });
@@ -864,7 +864,7 @@ class GitHubTreePush {
   }
 
   /**
-   * Returns a list of paths that will be changed if this is run
+   * Returns a list of paths that will be changed if this is run.
    */
   async treePushDryRun() {
     this.lastRunStats = {

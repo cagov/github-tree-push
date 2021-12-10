@@ -14,6 +14,7 @@ A module for pushing content to GitHub. You can use it for complicated folder st
 - Auto retry for common connection errors
 - Fully authenticated and conditional requests conserves rate-limit
 - Huge tree support splits large trees while still maintaining a single commit
+- Asynchronous input file download support
 
 ## Why use this?
 
@@ -126,6 +127,17 @@ Sets a single file to the tree to be syncronized (updated or added).
 | **`path`**     | string           | **Required.** Path to use for publishing file. |
 | **`content`**  | string \| Buffer | **Required.** Content to use for the file.     |
 
+### `syncDownload(path, url)`
+
+Adds a content URL to be downloaded asyronously before the push happens.
+
+#### `syncDownload` parameters
+
+| Parameter Name | Type   | Description                                    |
+| :------------- | :----- | :--------------------------------------------- |
+| **`path`**     | string | **Required.** Path to use for publishing file. |
+| **`url`**      | string | **Required.** URL for the content to download. |
+
 ### `removeFile(path)`
 
 Sets a file to be removed.
@@ -146,11 +158,17 @@ Sets a file to **not** be removed when `removeOtherFiles:true`.
 | :------------- | :----- | :------------------------------------------ |
 | **`path`**     | string | **Required.** Path of file to be preserved. |
 
+### `treePushDryRun()`
+
+Returns a list of paths that will be changed if this is run.
+
 ### `treePush()`
 
 Push all the files added to the tree to the repository.
 
-#### `treePush` options
+## Options explained
+
+### `treePush` options
 
 | Property Name              | Type    | Default               | Description                                                                             |
 | :------------------------- | :------ | :-------------------- | :-------------------------------------------------------------------------------------- |
@@ -165,7 +183,7 @@ Push all the files added to the tree to the repository.
 | **`pull_request`**         | boolean | `false`               | Set as `true` to use a pull request.                                                    |
 | **`pull_request_options`** | object  | `{}`                  | Options if using a pull request. See [pull request options](#pull-request-options).     |
 
-#### Pull request options
+### Pull request options
 
 Options based on [GitHub pull request docs](https://docs.github.com/en/rest/reference/pulls#create-a-pull-request).
 
@@ -181,7 +199,7 @@ Options based on [GitHub pull request docs](https://docs.github.com/en/rest/refe
 | **`automatic_merge`**       | boolean | `false` | Set as `true` to merge the pull request after creating it. Will wait for status checks to pass. |
 | **`automatic_merge_delay`** | number  | `0`     | MS to delay after creating before attempting to merge.                                          |
 
-#### Pull request review options
+### Pull request review options
 
 Options based on [GitHub review request docs](https://docs.github.com/en/rest/reference/pulls#request-reviewers-for-a-pull-request).
 
@@ -191,7 +209,7 @@ Options based on [GitHub review request docs](https://docs.github.com/en/rest/re
 | **`labels`**    | string[] | Issue labels to apply to the pull request.            |
 | **`assignees`** | string[] | Logins for users to assign to this issue.             |
 
-#### Pull request issue options
+### Pull request issue options
 
 Options based on [GitHub issue docs](https://docs.github.com/en/rest/reference/issues#update-an-issue).
 
@@ -200,7 +218,7 @@ Options based on [GitHub issue docs](https://docs.github.com/en/rest/reference/i
 | **`reviewers`**      | string[] | Requests an array of user logins. |
 | **`team_reviewers`** | string[] | Requests an array of team slugs.  |
 
-## `lastRunStats` output
+### `lastRunStats` output
 
 When looking at the last run, the following data is available:
 
