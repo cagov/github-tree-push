@@ -301,7 +301,9 @@ class GitHubTreePush {
    * @param {number[]} [okStatusCodes]
    */
   async __fetchResponse(path, options, okStatusCodes) {
-    const apiURL = `https://api.github.com/repos/${this.options.owner}/${this.options.repo}${path}`;
+    const apiURL = path.startsWith("http")
+      ? path
+      : `https://api.github.com/repos/${this.options.owner}/${this.options.repo}${path}`;
 
     //All these request have required auth
     if (!options?.headers?.Authorization) {
