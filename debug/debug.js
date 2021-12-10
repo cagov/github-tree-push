@@ -28,6 +28,10 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
   tree1.syncFile("A/B/fileAB1.txt", `C${suffix}`);
   tree1.syncFile("A/B/fileAB2.txt", `D${suffix}`);
   tree1.syncFile("Target File.txt", `2E${suffix}`);
+  tree1.syncDownload(
+    "image.png",
+    `https://as-go-covid19-d-001.azurewebsites.net/wp-content/uploads/2020/04/image.png`
+  );
 
   //tree1.removeFile("Target File.txt");
   //tree1.doNotRemoveFile("Target File.txt");
@@ -36,6 +40,8 @@ const { GitHubTreePush } = require("@cagov/github-tree-push");
     "Special Path옹엄얼언웅워원월/Special File옹엄얼언웅워원월.txt",
     "some data 옹엄얼언웅워원월"
   );
+
+  await tree1.treePushDryRun();
 
   await tree1.treePush();
 

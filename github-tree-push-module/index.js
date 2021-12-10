@@ -78,7 +78,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * @typedef {object} GithubCompare
- * @property {{commmit:GithubCommit}[]} commits
+ * @property {GithubCommit} commit
  * @property {GithubCompareFile[]} files
  */
 
@@ -215,6 +215,11 @@ class GitHubTreePush {
      * @type {function():string}
      */
     this.__token = () => token;
+
+    /**
+     * @type {{path:string,url:string}[]}
+     */
+    this.__downloads = [];
 
     this.options.recursive = this.options.recursive ?? true; //default to true
 
@@ -380,32 +385,37 @@ class GitHubTreePush {
       treeUrl = masterBranch;
     }
 
-    const recursiveOption = this.options.recursive ? "?recursive=true" : "";
+    if (treeUrl) {
+      const recursiveOption = this.options.recursive ? "?recursive=true" : "";
 
-    //https://docs.github.com/en/rest/reference/git#get-a-tree
-    //update the referenceTree to match the remote tree
+      //https://docs.github.com/en/rest/reference/git#get-a-tree
+      //update the referenceTree to match the remote tree
 
-    /** @type {{sha:string,truncated:boolean,tree:GithubTreeRow[]}}} */
-    const treeResult = await this.__getSomeJson(
-      `/git/trees/${treeUrl}${recursiveOption}`
-    );
-    if (treeResult.truncated) {
-      throw new Error("Tree is too big to compare.  Use a sub-folder.");
+      /** @type {{sha:string,truncated:boolean,tree:GithubTreeRow[]}}} */
+      const treeResult = await this.__getSomeJson(
+        `/git/trees/${treeUrl}${recursiveOption}`
+      );
+      if (treeResult.truncated) {
+        throw new Error("Tree is too big to compare.  Use a sub-folder.");
+      }
+      const referenceTree = treeResult.tree.filter(x => x.type === "blob");
+
+      this.lastRunStats.Target_Tree_Size = referenceTree.length;
+
+      //Add all the known shas to a list
+      referenceTree
+        .map(x => x.sha)
+        .forEach(x => {
+          if (x) {
+            this.__knownBlobShas.add(x);
+          }
+        });
+
+      return referenceTree;
+    } else {
+      //empty tree
+      return [];
     }
-    const referenceTree = treeResult.tree.filter(x => x.type === "blob");
-
-    this.lastRunStats.Target_Tree_Size = referenceTree.length;
-
-    //Add all the known shas to a list
-    referenceTree
-      .map(x => x.sha)
-      .forEach(x => {
-        if (x) {
-          this.__knownBlobShas.add(x);
-        }
-      });
-
-    return referenceTree;
   }
 
   /**
@@ -568,6 +578,7 @@ class GitHubTreePush {
    * Creates a GitHub compare
    *
    * @param {GithubCommit} commit
+   * @returns {Promise<GithubCompare | null>}
    */
   async __compareCommit(commit) {
     if (!commit?.parents) {
@@ -578,10 +589,18 @@ class GitHubTreePush {
 
     //https://docs.github.com/en/rest/reference/repos#compare-two-commits
     //Compare the proposed commit with the trunk (master) branch
-    /** @type {GithubCompare} */
     const compare = await this.__getSomeJson(
       `/compare/${baseSha}...${commitSha}`
     );
+
+    /** @type {*[]} */
+    const commitsArray = compare.commits;
+
+    if (commitsArray.length) {
+      //pull in some common commit info
+      compare.commit = commitsArray[0];
+      compare.commit.message = compare.commit.commit.message;
+    }
 
     return compare;
   }
@@ -626,6 +645,16 @@ class GitHubTreePush {
    */
   removeFile(path) {
     this.__treeOperations.set(path, { remove: true });
+  }
+
+  /**
+   * Adds a content URL to be downloaded asyronously before the push happens.
+   *
+   * @param {string} path Path to use for publishing file
+   * @param {string} url URL for the content to download.
+   */
+  syncDownload(path, url) {
+    this.__downloads.push({ path, url });
   }
 
   /**
@@ -798,12 +827,68 @@ class GitHubTreePush {
   }
 
   /**
+   * async download of any requested urls
+   */
+  async __getDownloads() {
+    if (this.__downloads.length) {
+      const urls = [...new Set(this.__downloads.map(dl => dl.url))];
+
+      console.log(`Downloading ${urls.length} file(s)...\n${urls.join("\n")}`);
+
+      const promises = urls.map(async url =>
+        fetch(url)
+          .then(fetchResponse => {
+            if (fetchResponse.ok) {
+              return fetchResponse.arrayBuffer();
+            } else {
+              throw new Error(
+                `${fetchResponse.status} - ${fetchResponse.statusText} - ${fetchResponse.url}`
+              );
+            }
+          })
+          .then(blob => ({ url, buffer: Buffer.from(blob) }))
+      );
+
+      /** @type {Map<string,Buffer>} */
+      const downloadResults = new Map();
+      (await Promise.all(promises)).forEach(promise =>
+        downloadResults.set(promise.url, promise.buffer)
+      );
+
+      console.log(`${urls.length} download(s) complete.`);
+
+      this.__downloads.forEach(dl => {
+        this.syncFile(dl.path, downloadResults.get(dl.url));
+      });
+    }
+  }
+
+  /**
+   * Returns a list of paths that will be changed if this is run.
+   */
+  async treePushDryRun() {
+    this.lastRunStats = {
+      Name: `treePushDryRun - ${
+        this.options.commit_message || "(No commit message)"
+      }`
+    };
+
+    const referenceTree = await this.__readTree();
+
+    const updatetree = this.__deltaTree(referenceTree);
+
+    return updatetree.map(x => x.path);
+  }
+
+  /**
    * Push all the files added to the tree to the repository
    */
   async treePush() {
     this.lastRunStats = {
       Name: `treePush - ${this.options.commit_message || "(No commit message)"}`
     };
+
+    await this.__getDownloads();
 
     const referenceTree = await this.__readTree();
 
@@ -817,13 +902,15 @@ class GitHubTreePush {
     );
 
     if (!commit) {
-      console.log("Nothing to commit.");
+      console.log(`${this.lastRunStats.Name} - No Changes.`);
     } else {
       const compare = await this.__compareCommit(commit);
 
       if (compare?.files.length) {
         //Changes to apply
         this.lastCompare = compare;
+
+        console.log(`${compare.commit.message} - ${compare.commit.html_url}`);
 
         if (this.options.pull_request) {
           //Pull Request Mode
@@ -975,6 +1062,7 @@ class GitHubTreePush {
         }
       }
     }
+
     return this.lastRunStats;
   }
 }
