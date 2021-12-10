@@ -543,6 +543,7 @@ class GitHubTreePush {
       tree: createTreeResult.sha,
       message: commit_message || ""
     });
+    console.log(`${commitResult.message} - ${commitResult.html_url}`);
 
     //Add all the new content shas to the list
     tree
@@ -590,7 +591,7 @@ class GitHubTreePush {
     const commitSha = commit.sha;
 
     //https://docs.github.com/en/rest/reference/repos#compare-two-commits
-    //Compare the proposed commit with the trunk (master) branch
+    //Compare the proposed commit with the parent
     const compare = await this.__getSomeJson(
       `/compare/${baseSha}...${commitSha}`
     );
@@ -603,6 +604,8 @@ class GitHubTreePush {
       compare.commit = commitsArray[0];
       compare.commit.message = compare.commit.commit.message;
     }
+
+    this.lastCompare = compare;
 
     return compare;
   }
@@ -910,9 +913,6 @@ class GitHubTreePush {
 
       if (compare?.files.length) {
         //Changes to apply
-        this.lastCompare = compare;
-
-        console.log(`${compare.commit.message} - ${compare.commit.html_url}`);
 
         if (this.options.pull_request) {
           //Pull Request Mode
