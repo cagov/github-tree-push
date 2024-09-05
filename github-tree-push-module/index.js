@@ -507,7 +507,7 @@ class GitHubTreePush {
     //Split the tree into allowable sizes
     let evalIndex = 0;
     while (evalIndex < treeParts.length) {
-      if (JSON.stringify(treeParts[evalIndex]).length > 9000000) {
+      if (JSON.stringify(treeParts[evalIndex]).length > 500000) {
         let half = Math.ceil(treeParts[evalIndex].length / 2);
         treeParts.unshift(treeParts[evalIndex].splice(0, half));
       } else {
