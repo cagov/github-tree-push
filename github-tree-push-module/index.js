@@ -1,7 +1,8 @@
 //@ts-check
 const fetch = require("fetch-retry")(require("node-fetch/lib"), {
   retries: 3,
-  retryDelay: 2000
+  retryDelay: 2000,
+  retryOn: [500, 502, 504]
 });
 
 /** Default title used when one isn't specified for a Pull Request */
@@ -321,7 +322,10 @@ class GitHubTreePush {
       }
 
       if (!response.ok && !okStatusCodes?.includes(response.status)) {
-        const body = await response.text();
+        const body =
+          response.status >= 500
+            ? "(server error)"
+            : await response.text();
 
         throw new Error(
           `${response.status} - ${response.statusText} - ${response.url} - ${body}`
