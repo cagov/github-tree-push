@@ -891,8 +891,10 @@ class GitHubTreePush {
 
   /**
    * Push all the files added to the tree to the repository
+   *
+   * @param {boolean} [retryOnRefUpdateConflict] retry once if a ref update race occurs
    */
-  async treePush() {
+  async treePush(retryOnRefUpdateConflict = true) {
     this.lastRunStats = {
       Name: `treePush - ${this.options.commit_message || "(No commit message)"}`
     };
@@ -1058,13 +1060,31 @@ class GitHubTreePush {
         } else {
           //Just a simple commit on this branch
           //https://docs.github.com/en/rest/reference/git#update-a-reference
-          await this.__postSomeJson(
-            `/git/refs/heads/${this.options.base}`,
-            {
-              sha: commit.sha
-            },
-            { method: "PATCH" }
-          );
+          try {
+            await this.__postSomeJson(
+              `/git/refs/heads/${this.options.base}`,
+              {
+                sha: commit.sha
+              },
+              { method: "PATCH" }
+            );
+          } catch (error) {
+            const errorMessage = `${error?.message || ""}`;
+            const isRefUpdateConflict =
+              errorMessage.includes("422") &&
+              errorMessage.includes("/git/refs/heads/") &&
+              (errorMessage.includes("Reference update failed") ||
+                errorMessage.includes("Update is not a fast forward"));
+
+            if (retryOnRefUpdateConflict && isRefUpdateConflict) {
+              console.log(
+                `Base branch moved while updating ${this.options.base}. Retrying once on latest head.`
+              );
+              return this.treePush(false);
+            }
+
+            throw error;
+          }
         }
       }
     }
